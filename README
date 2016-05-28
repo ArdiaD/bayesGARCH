@@ -1,0 +1,11 @@
+bayesGARCH is an R package based on the content of the book:
+
+Ardia David (2008). 
+Financial Risk Management with Bayesian Estimation of GARCH Models: Theory and Applications. 
+Springer-Verlag, LNEMS 612. 
+doi: 10.1007/978-3-540-78657-3,
+ISBN: 978-3-540-78656-6 
+URL http://www.springer.com/economics/econometrics/book/978-3-540-78656-6
+
+The package is still under development and is distributed
+without warranty.
