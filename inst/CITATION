@@ -6,7 +6,7 @@ citHeader("To cite 'bayesGARCH' in publications use:")
 
 citEntry(entry = "Manual",
   title = "{bayesGARCH}: Bayesian Estimation of the {GARCH(1,1)} Model with Student-t Innovations in {R}",
-  author = person("David", "Ardia", email = "david.ardia@fsa.ulaval.ca"),
+  author = person("David", "Ardia", email = "david.ardia.ch@gmail.com"),
   year = year,
   note = vers,
   textVersion =

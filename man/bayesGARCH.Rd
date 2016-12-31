@@ -191,7 +191,7 @@
   Please cite the package in publications. Use \code{citation("bayesGARCH")}.
 }
 \author{%
-  David Ardia \email{david.ardia@fsa.ulaval.ca}
+  David Ardia \email{david.ardia.ch@gmail.com}
 }
 \references{%
   Ardia, D. (2009)
