@@ -201,7 +201,7 @@
   Ardia, D., Hoogerheide, L.F. (2010)
   Bayesian Estimation of the GARCH(1,1) Model with Student-t Innovations.
   \emph{The R Journal} \bold{2}(2), pp.41--47. 
-  URL \url{http://journal.r-project.org}
+  URL \url{https://journal.r-project.org/}
 
   Ardia, D. (2008) 
   Financial Risk Management with Bayesian Estimation of GARCH Models. 
