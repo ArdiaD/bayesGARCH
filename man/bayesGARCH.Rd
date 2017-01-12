@@ -196,18 +196,18 @@
 \references{%
   Ardia, D. (2009)
   Bayesian Estimation of a Markov-Switching Threshold Asymmetric GARCH Model with Student-t Innovations.
-  \emph{Econometrics Journal} \bold{12}(1), pp. 105--126. doi: 10.1111/j.1368-423X.2008.00253.x.
+  \emph{Econometrics Journal} \bold{12}(1), pp. 105--126. \doi{10.1111/j.1368-423X.2008.00253.x}.
 
   Ardia, D., Hoogerheide, L.F. (2010)
   Bayesian Estimation of the GARCH(1,1) Model with Student-t Innovations.
   \emph{The R Journal} \bold{2}(2), pp.41--47. 
-  URL \url{http://journal.r-project.org/}
+  URL \url{http://journal.r-project.org}
 
   Ardia, D. (2008) 
   Financial Risk Management with Bayesian Estimation of GARCH Models. 
   Lecture Notes in Economics and Mathematical Systems \bold{612}. Springer-Verlag, Berlin, Germany.
   ISBN 978-3-540-78656-6, e-ISBN 978-3-540-78657-3, doi: 10.1007/978-3-540-78657-3. 
-  URL \url{http://www.springer.com/economics/econometrics/book/978-3-540-78656-6}
+  URL \url{http://www.springer.com/de/book/9783540786566}
 
   Deschamps, P.J. (2006) 
   A Flexible Prior Distribution for Markov Switching Autoregressions with Student-t Errors. 
