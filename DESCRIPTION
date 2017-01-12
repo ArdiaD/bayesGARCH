@@ -1,5 +1,5 @@
 Package: bayesGARCH
-Version: 2.1.1
+Version: 2.1.2
 Date: 2017-01-12
 Title: Bayesian Estimation of the GARCH(1,1) Model with Student-t Innovations
 Authors@R: person("David", "Ardia", role = c("aut", "cre"), email = "david.ardia.ch@gmail.com")
