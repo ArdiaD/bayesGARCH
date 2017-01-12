@@ -1,5 +1,5 @@
 Package: bayesGARCH
-Version: 2.1.0
+Version: 2.1.1
 Date: 2017-01-12
 Title: Bayesian Estimation of the GARCH(1,1) Model with Student-t Innovations
 Authors@R: person("David", "Ardia", role = c("aut", "cre"), email = "david.ardia.ch@gmail.com")
@@ -8,7 +8,7 @@ Maintainer: David Ardia <david.ardia.ch@gmail.com>
 Imports:
     mvtnorm,
     coda
-Description: Provides the bayesGARCH function which performs the
+Description: Provides the bayesGARCH() function which performs the
     Bayesian estimation of the GARCH(1,1) model with Student's t innovations.
 License: GPL (>=2)
 RoxygenNote: 5.0.1
