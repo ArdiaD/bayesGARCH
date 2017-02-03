@@ -10,5 +10,7 @@ Imports:
     coda
 Description: Provides the bayesGARCH() function which performs the
     Bayesian estimation of the GARCH(1,1) model with Student's t innovations as described in Ardia (2008) <doi:10.1007/978-3-540-78657-3>.
+BugReports: https://github.com/ArdiaD/bayesGARCH/issues
+URL: https://github.com/ArdiaD/bayesGARCH
 License: GPL (>=2)
 RoxygenNote: 5.0.1
