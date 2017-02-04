@@ -20,7 +20,8 @@ citEntry(entry = "book",
                 "Financial Risk Management with Bayesian Estimation of GARCH Models: Theory and Application.",
                 "Lecture Notes in Economics and Mathematical Systems 612.",
                 "Springer-Verlag, Berlin, Germany.",
-                "ISBN 978-3-540-78656-6, doi:10.1007/978-3-540-78657-3.")
+                "ISBN 978-3-540-78656-6",
+                "doi:10.1007/978-3-540-78657-3")
 )
 
 citEntry(entry = "Article",
@@ -29,14 +30,14 @@ citEntry(entry = "Article",
   journal = "The R Journal",
   volume = "2",
   number = "2",
-  pages = "41--47",
+  pages = "41-47",
   year = "2010",
-  url = "http://journal.r-project.org/",
+  url = "https://journal.r-project.org/archive/2010-2/",
   textVersion = paste(
                 "Ardia, David and Hoogerheide, Lennart F. (2010).",
                 "Bayesian estimation of the GARCH(1,1) model with Student-t innovations.",
                 "The R Journal 2(2), pp.41-47",
-                "url:http://journal.r-project.org/")
+                "url:https://journal.r-project.org/archive/2010-2/")
 )
 
 citEntry(entry = "Article",
@@ -45,12 +46,12 @@ citEntry(entry = "Article",
   journal = "Econometrics Journal",
   volume = "12",
   number = "1",
-  pages = "105--126",
+  pages = "105-126",
   year = "2009",
   doi = "10.1111/j.1368-423X.2008.00253.x",
   textVersion = paste(
                 "Ardia, David (2009).",
                 "Bayesian estimation of a Markov-switching threshold asymmetric GARCH model with Student-t innovations.",
-                "Econometrics Journal 12(1). pp.105-126.",
+                "Econometrics Journal 12(1), pp.105-126.",
                 "doi:10.1111/j.1368-423X.2008.00253.x")
 )

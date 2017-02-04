@@ -16,12 +16,12 @@ a sampling algorithm.
 
 Please cite `bayesGARCH` in publications:
 
-Ardia, D., Hoogerheide, L.F. (2010).
-Bayesian estimation of the GARCH(1,1) model with Student-t innovations.
-_R Journal_ **2**(2), pp.41-47.
-https://journal.r-project.org/archive/2010-2/
+Ardia, D., Hoogerheide, L.F. (2010).  
+Bayesian estimation of the GARCH(1,1) model with Student-t innovations.  
+_R Journal_ **2**(2), pp.41-47.    
+[https://journal.r-project.org/archive/2010-2/](https://journal.r-project.org/archive/2010-2/)    
 
-Ardia, D. (2008)  
-_Financial Risk Management with Bayesian Estimation of GARCH Models: Theory and Applications_. 
-volume 612 series Lecture Notes in Economics and Mathematical Systems. Springer-Verlag, Berlin, Germany.
-http://dx.doi.org/10.1007/978-3-540-78657-3
+Ardia, D. (2008).    
+_Financial Risk Management with Bayesian Estimation of GARCH Models: Theory and Applications_.   
+volume 612 series Lecture Notes in Economics and Mathematical Systems. Springer-Verlag, Berlin, Germany.    
+[http://dx.doi.org/10.1007/978-3-540-78657-3](http://dx.doi.org/10.1007/978-3-540-78657-3)    
