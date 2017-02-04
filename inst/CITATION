@@ -32,12 +32,12 @@ citEntry(entry = "Article",
   number = "2",
   pages = "41-47",
   year = "2010",
-  url = "https://journal.r-project.org/archive/2010-2/",
+  url = "https://journal.R-project.org/archive/2010-2/",
   textVersion = paste(
                 "Ardia, David and Hoogerheide, Lennart F. (2010).",
                 "Bayesian estimation of the GARCH(1,1) model with Student-t innovations.",
                 "The R Journal 2(2), pp.41-47",
-                "url:https://journal.r-project.org/archive/2010-2/")
+                "url:https://journal.R-project.org/archive/2010-2/")
 )
 
 citEntry(entry = "Article",
