@@ -22,7 +22,7 @@ By using `bayesGARCH` you agree to the following rules:
 
 Ardia, D., Hoogerheide, L.F. (2010).  
 Bayesian estimation of the GARCH(1,1) model with Student-t innovations.  
-_R Journal_ **2**(2), pp.41-47.    
+_R Journal_, 2(2), 41-47.    
 [https://doi.org/10.32614/RJ-2010-014](https://doi.org/10.32614/RJ-2010-014)    
 
 Ardia, D. (2008).    
