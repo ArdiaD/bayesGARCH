@@ -189,7 +189,7 @@
   or run the algorithm with different initial values or a different random seed.
 }
 \note{
-By using \code{bayesGARCH}  you agree to the following rules:
+By using \code{bayesGARCH} you agree to the following rules:
 \itemize{
 \item You must cite Ardia and Hoogerheide (2010) in working papers and published papers that use \code{bayesGARCH}. Use \code{citation("bayesGARCH")}.
 \item You must place the following URL in a footnote to help others find \code{bayesGARCH}: \url{https://CRAN.R-project.org/package=bayesGARCH}. 
