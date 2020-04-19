@@ -4,8 +4,6 @@
 [![CRAN](http://www.r-pkg.org/badges/version/bayesGARCH)](https://cran.r-project.org/package=bayesGARCH) 
 [![Downloads](http://cranlogs.r-pkg.org/badges/bayesGARCH?color=brightgreen)](http://www.r-pkg.org/pkg/bayesGARCH)
 [![Downloads](http://cranlogs.r-pkg.org/badges/grand-total/bayesGARCH?color=brightgreen)](http://www.r-pkg.org/pkg/bayesGARCH)
-[![Pending Pull-Requests](http://githubbadges.herokuapp.com/ArdiaD/bayesGARCH/pulls.svg?style=flat)](https://github.com/ArdiaD/bayesGARCH/pulls)
-[![Github Issues](http://githubbadges.herokuapp.com/ArdiaD/bayesGARCH/issues.svg)](https://github.com/ArdiaD/bayesGARCH/issues)
 
 The package `bayesGARCH` ([Ardia and Hoogerheide, 2010)](https://journal.R-project.org/archive/2010-2/) implements in R 
 the Bayesian estimation procedure described 
