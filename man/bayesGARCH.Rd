@@ -202,34 +202,29 @@
   Ardia, D., Hoogerheide, L.F. (2010)
   Bayesian Estimation of the GARCH(1,1) Model with Student-t Innovations.
   \emph{The R Journal} \bold{2}(2), pp.41-47. 
-  \url{https://journal.R-project.org/archive/2010-2/}
+  \doi{10.32614/RJ-2010-014}
 
   Ardia, D. (2008) 
   Financial Risk Management with Bayesian Estimation of GARCH Models. 
   Lecture Notes in Economics and Mathematical Systems \bold{612}. Springer-Verlag, Berlin, Germany.
   ISBN 978-3-540-78656-6, e-ISBN 978-3-540-78657-3, 
   \doi{10.1007/978-3-540-78657-3}
-  \url{http://www.springer.com/de/book/9783540786566}
 
   Deschamps, P.J. (2006) 
   A Flexible Prior Distribution for Markov Switching Autoregressions with Student-t Errors. 
   \emph{Journal of Econometrics} \bold{133}, pp.153-190.
-  \doi{10.1016/j.jeconom.2005.03.012}
 
   Geweke, J.F. (1993)
   Bayesian Treatment of the Independent Student-t Linear Model. 
   \emph{Journal of Applied Econometrics} \bold{8}, pp.19-40.
-  \doi{10.1002/jae.3950080504}
 
   Nakatsuma, T. (2000)
   Bayesian Analysis of ARMA-GARCH Models: A Markov Chain Sampling Approach. 
   \emph{Journal of Econometrics} \bold{95}(1), pp.57-69.
-  \doi{10.1016/S0304-4076(99)00029-9}
 
   Nakatsuma, T. (1998)
   A Markov-Chain Sampling Algorithm for GARCH Models. 
   \emph{Studies in Nonlinear Dynamics and Econometrics} \bold{3}(2), pp.107-117.
-  \doi{10.2202/1558-3708.1043}
 }
 \seealso{%
   \code{\link[fGarch:garchFit]{garchFit}} (\R package \pkg{fGarch}) for the classical

@@ -13,7 +13,6 @@ citEntry(entry = "book",
   volume = "612",
   year = "2008",
   doi = "10.1007/978-3-540-78657-3",
-  url = "http://www.springer.com/de/book/9783540786566",
   note = "ISBN 978-3-540-78656-6, e-ISBN 978-3-540-78657-3",
   textVersion = paste(
                 "Ardia, David (2008).",
@@ -32,12 +31,12 @@ citEntry(entry = "Article",
   number = "2",
   pages = "41-47",
   year = "2010",
-  url = "https://journal.R-project.org/archive/2010-2/",
+  doi = "10.32614/RJ-2010-014",
   textVersion = paste(
                 "Ardia, David and Hoogerheide, Lennart F. (2010).",
                 "Bayesian estimation of the GARCH(1,1) model with Student-t innovations.",
                 "The R Journal 2(2), pp.41-47",
-                "url:https://journal.R-project.org/archive/2010-2/")
+                "doi:10.32614/RJ-2010-014")
 )
 
 citEntry(entry = "Article",
