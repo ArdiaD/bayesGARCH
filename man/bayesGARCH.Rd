@@ -187,8 +187,14 @@
   so it is almost impossible for this MCMC sampler to get stuck at a given value for many subsequent draws.
   In the unlikely case that such ill behavior would occur, one could scale the data (to have standard deviation 1),
   or run the algorithm with different initial values or a different random seed.
-  
-  Please cite the package in publications. Use \code{citation("bayesGARCH")}.
+}
+\note{
+By using \code{bayesGARCH}  you agree to the following rules:
+\itemize{
+\item You must cite Ardia and Hoogerheide (2010) in working papers and published papers that use \code{bayesGARCH}. Use \code{citation("bayesGARCH")}.
+\item You must place the following URL in a footnote to help others find \code{bayesGARCH}: \url{https://CRAN.R-project.org/package=bayesGARCH}. 
+\item You assume all risk for the use of \code{bayesGARCH}.
+}
 }
 \author{%
   David Ardia \email{david.ardia.ch@gmail.com}
