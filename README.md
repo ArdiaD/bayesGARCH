@@ -1,5 +1,5 @@
 # bayesGARCH
-[![RJournal](https://img.shields.io/badge/RJournal-10.1016%2Fj.jbankfin.2017.10.014-brightgreen)](https://doi.org/10.32614/RJ-2010-014)
+[![RJournal](https://img.shields.io/badge/RJournal-10.32614%2Fj.jbankfin.2017.10.014-brightgreen)](https://doi.org/10.32614/RJ-2010-014)
 [![CRAN](http://www.r-pkg.org/badges/version/bayesGARCH)](https://cran.r-project.org/package=bayesGARCH) 
 [![Downloads](http://cranlogs.r-pkg.org/badges/bayesGARCH?color=brightgreen)](http://www.r-pkg.org/pkg/bayesGARCH)
 [![Downloads](http://cranlogs.r-pkg.org/badges/grand-total/bayesGARCH?color=brightgreen)](http://www.r-pkg.org/pkg/bayesGARCH)
