@@ -16,7 +16,7 @@ a sampling algorithm.
 By using `bayesGARCH` you agree to the following rules: 
 
 1) You must cite [Ardia and Hoogerheide (2010)](https://doi.org/10.32614/RJ-2010-014) in working papers and published papers that use `bayesGARCH`.
-2) You must place the following URL in a footnote to help others find `bayesGARCH`: https://CRAN.R-project.org/package=bayesGARCH. 
+2) You must place the following URL in a footnote to help others find `bayesGARCH`: [https://CRAN.R-project.org/package=bayesGARCH](https://CRAN.R-project.org/package=bayesGARCH). 
 3) You assume all risk for the use of `bayesGARCH`.
 
 Ardia, D., Hoogerheide, L.F. (2010).  
