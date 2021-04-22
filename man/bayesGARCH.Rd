@@ -187,14 +187,8 @@
   so it is almost impossible for this MCMC sampler to get stuck at a given value for many subsequent draws.
   In the unlikely case that such ill behavior would occur, one could scale the data (to have standard deviation 1),
   or run the algorithm with different initial values or a different random seed.
-}
-\note{
-By using \code{bayesGARCH} you agree to the following rules:
-\itemize{
-\item You must cite Ardia and Hoogerheide (2010) in working papers and published papers that use \code{bayesGARCH}. Use \code{citation("bayesGARCH")}.
-\item You must place the following URL in a footnote to help others find \code{bayesGARCH}: \url{https://CRAN.R-project.org/package=bayesGARCH}. 
-\item You assume all risk for the use of \code{bayesGARCH}.
-}
+  
+  Please cite the package in publications. Use \code{citation("bayesGARCH")}.
 }
 \author{%
   David Ardia \email{david.ardia.ch@gmail.com}
@@ -207,7 +201,7 @@ By using \code{bayesGARCH} you agree to the following rules:
 
   Ardia, D., Hoogerheide, L.F. (2010)
   Bayesian Estimation of the GARCH(1,1) Model with Student-t Innovations.
-  \emph{The R Journal} \bold{2}(2), pp.41-47. 
+  \emph{R Journal} \bold{2}(2), pp.41-47. 
   \doi{10.32614/RJ-2010-014}
 
   Ardia, D. (2008) 

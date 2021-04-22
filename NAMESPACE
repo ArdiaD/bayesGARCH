@@ -1,6 +1,6 @@
 export(bayesGARCH)
 export(formSmpl)
-useDynLib(bayesGARCH)
+useDynLib(bayesGARCH, .registration = TRUE)
 importFrom("mvtnorm", "dmvnorm", "rmvnorm")
 importFrom("stats", "dnorm", "rexp", "rgamma", "rnorm", "runif", "uniroot")
 importFrom("coda", "mcmc")

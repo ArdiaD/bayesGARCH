@@ -26,7 +26,7 @@ citEntry(entry = "book",
 citEntry(entry = "Article",
   author = personList(as.person("David Ardia"), person("Lennart F.","Hoogerheide")),
   title = "Bayesian estimation of the {GARCH(1,1)} model with Student-t innovations",
-  journal = "The R Journal",
+  journal = "R Journal",
   volume = "2",
   number = "2",
   pages = "41-47",
@@ -35,7 +35,7 @@ citEntry(entry = "Article",
   textVersion = paste(
                 "Ardia, David and Hoogerheide, Lennart F. (2010).",
                 "Bayesian estimation of the GARCH(1,1) model with Student-t innovations.",
-                "The R Journal 2(2), pp.41-47",
+                "R Journal 2(2), pp.41-47",
                 "doi:10.32614/RJ-2010-014")
 )
 

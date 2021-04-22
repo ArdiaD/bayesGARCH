@@ -1,11 +1,8 @@
 # bayesGARCH
-[![CRAN](http://www.r-pkg.org/badges/version/bayesGARCH)](https://cran.r-project.org/package=bayesGARCH) 
-[![Downloads](http://cranlogs.r-pkg.org/badges/bayesGARCH?color=brightgreen)](http://www.r-pkg.org/pkg/bayesGARCH)
-[![Downloads](http://cranlogs.r-pkg.org/badges/grand-total/bayesGARCH?color=brightgreen)](http://www.r-pkg.org/pkg/bayesGARCH)
 
-The package `bayesGARCH` ([Ardia and Hoogerheide, 2010)](https://journal.R-project.org/archive/2010-2/) implements in R 
+The package `bayesGARCH` ([Ardia and Hoogerheide, 2010)](https://doi.org/10.32614/RJ-2010-014) implements in R 
 the Bayesian estimation procedure described 
-in [Ardia (2008)](http://dx.doi.org/10.1007/978-3-540-78657-3) for the GARCH(1,1) model with Student-t innovations.
+in [Ardia (2008)](https://doi.org/10.1007/978-3-540-78657-3) for the GARCH(1,1) model with Student-t innovations.
 The approach consists of a Metropolis-Hastings (MH) algorithm where the proposal distributions
 are constructed from auxiliary ARMA processes on the squared observations. This methodology 
 avoids the time-consuming and difficult task, especially for non-experts, of choosing and tuning 
