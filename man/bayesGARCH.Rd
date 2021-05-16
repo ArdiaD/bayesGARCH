@@ -42,7 +42,7 @@
   function \eqn{\alpha := (\alpha_0 \ \alpha_1)'}{alpha:=(alpha0 alpha1)'} and \eqn{\beta}{beta} and on
   Geweke (1993) and Deschamps (2006) for the generating the degrees of freedom
   parameter \eqn{\nu}{nu}. Further details and examples can be found in Ardia (2008) and 
-  Ardia and Hoogerheide (2010). See also the package vignette by typing \code{vignette("bayesGARCH")}. Finally, we refer to 
+  Ardia and Hoogerheide (2010). Finally, we refer to 
   Ardia (2009) for an extension of the algorithm to Markov-switching GARCH models.
 
   The \code{control} argument is a list that can supply any of
@@ -68,6 +68,12 @@
   A list of class \code{mcmc.list} (\R package \pkg{coda}).
 }
 \note{%
+By using \code{bayesGARCH} you agree to the following rules:
+\itemize{
+\item You must cite Ardia and Hoogerheide (2010) in working papers and published papers that use \code{bayesGARCH}. Use \code{citation("bayesGARCH")}.
+\item You must place the following URL in a footnote to help others find \code{bayesGARCH}: \url{https://CRAN.R-project.org/package=bayesGARCH}. 
+\item You assume all risk for the use of \code{bayesGARCH}.
+}
   The GARCH(1,1) model with Student-t innovations may be written as follows:
   \deqn{
     y_t = \epsilon_t (\varrho h_t)^{1/2}
@@ -187,8 +193,6 @@
   so it is almost impossible for this MCMC sampler to get stuck at a given value for many subsequent draws.
   In the unlikely case that such ill behavior would occur, one could scale the data (to have standard deviation 1),
   or run the algorithm with different initial values or a different random seed.
-  
-  Please cite the package in publications. Use \code{citation("bayesGARCH")}.
 }
 \author{%
   David Ardia \email{david.ardia.ch@gmail.com}
