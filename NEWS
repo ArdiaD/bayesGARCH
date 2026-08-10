@@ -1,3 +1,90 @@
+Changes in Version 2.2.0
+  o BUG FIX, AFFECTS RESULTS: 'control$addPriorConditions' now enters the
+    acceptance test of each Metropolis-Hastings step instead of being applied
+    once to the whole block. The previous scheme accepted or rejected the
+    entire sweep on the final value of psi. Each sub-step is reversible with
+    respect to the unconstrained posterior, but their composition is only
+    invariant, not reversible, so rejecting the block did not leave the
+    constrained posterior p(psi|y) I[psi in A] invariant and the chain
+    converged to the wrong distribution. On the dem2gbp benchmark under the
+    covariance-stationarity constraint alpha1 + beta < 1, the posterior mean
+    of alpha0 was overstated by about 60% and that of alpha1 by about 35%.
+    Users who called bayesGARCH() with 'addPriorConditions' should re-run.
+    Runs WITHOUT 'addPriorConditions' target the same posterior as before and
+    need not be revisited; see the note on numerical changes below for why
+    they are nonetheless no longer reproduced bit for bit from a given seed.
+  o BUG FIX: supplying 'control$n.chain' together with a 'control$start.val'
+    matrix of several rows failed with "length of 'dimnames' [2] not equal to
+    array extent". Several rows are now used as documented (one per chain), a
+    single row or a vector is replicated across chains, and a mismatch
+    between the two is reported clearly.
+  o BUG FIX: formSmpl() validated the length of 'l.bi' where it meant
+    'batch.size'.
+  o BUG FIX: a non-finite Metropolis-Hastings ratio, which can arise when two
+    log posterior evaluations are both -Inf, made the acceptance test NA and
+    aborted the chain. Such a proposal is now rejected.
+  o BUG FIX: fixed a potential out-of-bounds write in the simulation branch
+    of the C variance recursion. It was unreachable from R, where 'sim' is
+    always zero.
+  o 'control$l.chain' and 'control$n.chain' are now validated. A 'l.chain' of
+    1 previously wrote past the end of the chain.
+  o 'y' may now be any numeric vector, including a 'ts' or 'zoo' series,
+    which the previous is.vector() test rejected.
+  o Progress reports use message() rather than cat(), so they can be silenced
+    with suppressMessages(). This applies to bayesGARCH() and formSmpl().
+  o Each chain of the returned mcmc.list carries a "move.rates" attribute
+    giving the proportion of iterations at which each parameter moved. A high
+    rate is not by itself evidence of good mixing: the accepted moves are
+    typically small and the chains are strongly autocorrelated.
+  o The returned object is built with coda::mcmc.list() rather than by
+    setting the class attribute directly.
+  o SPEED: about a quarter less time per iteration. mvtnorm::dmvnorm() and
+    mvtnorm::rmvnorm(method = "eigen") were replaced, in the alpha step only,
+    by internal equivalents that perform the same operations in the same order
+    without the argument checking and dispatch that dominated their cost at
+    p = 2; these are exact substitutes, and tests pin them against mvtnorm.
+    The w and alpha steps now share one evaluation of the conditional variance
+    instead of computing it twice, and the Gamma shape in the w step is no
+    longer expanded into a vector of identical values. Neither of those
+    changes the arithmetic.
+  o NUMERICS, changes the low-order bits of the draws: fn.Dd.D() now forms the
+    weighted cross-products from the whitened regressors Z := X/sqrt(h),
+    through crossprod(), rather than from X/h through t(X/h) %*% X. Both
+    compute X' diag(1/h) X. The new form is symmetric by construction, about
+    five times closer to the exactly rounded value for that matrix, and about
+    an order of magnitude closer for the cross-products of the beta step,
+    whose regressors change sign. The posterior precision is then inverted
+    through its Cholesky factor rather than by a general LU solve, which is
+    both faster and, unlike solve(), returns an exactly symmetric D. That
+    removes a latent inconsistency: D is handed to chol(), which reads its
+    upper triangle, and to eigen(symmetric = TRUE), which reads its lower one,
+    so an asymmetric D meant the covariance used to draw the candidate and the
+    covariance used to evaluate its density differed in their last bits. The
+    posterior being targeted is unchanged, but a given seed no longer
+    reproduces the draws of version 2.1.10 exactly.
+  o mvtnorm moved from Imports to Suggests, where it is now used only to test
+    the equivalence above.
+  o Documented the corrected handling of 'addPriorConditions'.
+  o Documentation fix: the default 'control$start.val' was documented as
+    c(0.01,0.1,0.7,20); the code uses c(0.01,0.1,0.7,100).
+  o Documentation fix: replaced the claims about the sampler's speed and
+    mixing with a measured statement. The cost per iteration is modest on
+    current hardware, but the default l.chain=10000 yields an effective
+    sample size of only a few hundred draws per parameter on dem2gbp.
+    Readers are pointed at coda::effectiveSize() and coda::gelman.diag().
+  o CITATION file updated to bibentry(); citEntry() and personList() are
+    deprecated.
+  o Added a testthat suite. The statistical checks, namely the dem2gbp Normal
+    benchmark and a regression test pinning the constrained posterior to an
+    independently obtained reference, are skipped on CRAN.
+  o Removed cvGARCH(), which was never exported, documented or called, and
+    the C routines fnFilterAlphaAsymC() and fnFilterWAsymC(), which were
+    neither registered nor called.
+  o mvtnorm and coda functions are now consistently namespace-qualified.
+  o DESCRIPTION: dropped the CRAN-generated Author and Repository fields and
+    a RoxygenNote entry for a package that uses no roxygen; added Encoding
+    and the 'fnd' role for the author.
+
 Changes in Version 2.1.10
   o Doc fixed
   

@@ -50,13 +50,16 @@
 
   \describe{%
     \item{\code{n.chain}}{number of MCMC chain(s) to be
-      generated. Default: \code{n.chain=1}.}
-    \item{\code{l.chain}}{length of each MCMC chain. Default: \code{l.chain=10000}.}    
+      generated. Default: \code{n.chain=1}. When \code{start.val} is a matrix
+      holding one row per chain, \code{n.chain} may be omitted, in which case it
+      is taken to be the number of rows.}
+    \item{\code{l.chain}}{length of each MCMC chain. Default: \code{l.chain=10000}.}
     \item{\code{start.val}}{vector of starting values of
-      chain(s). Default: \code{start.val=c(0.01,0.1,0.7,20)}. A matrix of
+      chain(s). Default: \code{start.val=c(0.01,0.1,0.7,100)}. A matrix of
       size \eqn{n \times 4}{nx4}
       containing starting values in rows can also be provided. This will generate \eqn{n} chains starting at the
-      different row values.}
+      different row values. A vector, or a matrix with a single row, is
+      replicated across the \code{n.chain} chains.}
     \item{\code{addPriorConditions}}{function which allows the user to add constraints on the model parameters. 
       Default: \code{NULL}, i.e. not additional constraints are imposed (see below).}
     \item{\code{refresh}}{frequency of reports. Default: \code{refresh=10} iterations.}
@@ -65,7 +68,15 @@
   }
 }
 \value{%
-  A list of class \code{mcmc.list} (\R package \pkg{coda}).
+  A list of class \code{mcmc.list} (\R package \pkg{coda}), with one
+  \code{mcmc} object per chain.
+
+  Each chain carries a \code{"move.rates"} attribute holding, for every
+  parameter, the proportion of iterations at which its value changed. This is
+  a diagnostic only: a high rate is not by itself evidence of good mixing,
+  since the accepted moves are typically small. Use
+  \code{\link[coda]{effectiveSize}} to judge how many independent draws the
+  chain actually delivers.
 }
 \note{%
 By using \code{bayesGARCH} you agree to the following rules:
@@ -179,9 +190,26 @@ By using \code{bayesGARCH} you agree to the following rules:
   lead to a very inefficient sampler. This would however indicate that the
   condition is not supported by the data.
 
-  The estimation strategy implemented in \code{bayesGARCH} is fully automatic and does not require 
-  any tuning of the MCMC sampler. The generation of the Markov chains is however time
-  consuming and estimating the model over several datasets on a daily basis can therefore take a significant amount
+  The constraint enters the acceptance test of \emph{each}
+  Metropolis-Hastings step, so that the sampler leaves the constrained
+  posterior \eqn{p(\psi \mid y) I_{[\psi \in A]}}{p(psi|y) I[psi in A]}
+  invariant. Up to version 2.1.10 the constraint was instead applied once to
+  the whole block of parameters, accepting or rejecting the entire sweep on
+  the final value of \eqn{\psi}{psi}. That scheme does not preserve the
+  constrained posterior --- the block is a composition of reversible steps,
+  which is invariant but not itself reversible --- and the chain converged to
+  a different distribution. Results obtained with \code{addPriorConditions}
+  under earlier versions should be re-computed; see the \file{NEWS} file.
+
+  The estimation strategy implemented in \code{bayesGARCH} is fully automatic and does not require
+  any tuning of the MCMC sampler. The cost per iteration is modest on current hardware, but the
+  draws are strongly autocorrelated, so long chains are needed: on the \code{dem2gbp} series
+  (\eqn{T = 1974}{T=1974}) the default \code{l.chain=10000} delivers an effective sample size of
+  only a few hundred draws per parameter. Always inspect the output before using it ---
+  \code{\link[coda]{effectiveSize}} and \code{\link[coda]{gelman.diag}} (\R package \pkg{coda})
+  apply directly to the value returned by \code{bayesGARCH} --- and raise \code{l.chain} until the
+  effective sample size is adequate for the quantity of interest. Estimating the model over several
+  datasets on a daily basis can therefore take a significant amount
   of time. In this case, the algorithm can be easily parallelized, by running a single chain on several processors.
   Also, when the estimation is repeated over updated time series (i.e. time series with more recent 
   observations), it is wise to start the algorithm using the posterior mean or median of the parameters 
@@ -191,6 +219,8 @@ By using \code{bayesGARCH} you agree to the following rules:
   Finally, note that as any MH algorithm, the sampler can get stuck to a given value, so that the chain does not move
   anymore. However, the sampler uses Taylor-made candidate densities that are especially `constructed' at each step,
   so it is almost impossible for this MCMC sampler to get stuck at a given value for many subsequent draws.
+  A high proportion of accepted moves should not be read as good mixing, however: the accepted moves
+  are typically small, and the resulting chains are strongly autocorrelated, as noted above.
   In the unlikely case that such ill behavior would occur, one could scale the data (to have standard deviation 1),
   or run the algorithm with different initial values or a different random seed.
 }

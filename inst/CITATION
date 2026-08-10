@@ -4,9 +4,9 @@ vers <- paste("version", meta$Version)
 
 citHeader("To cite 'bayesGARCH' in publications use:")
 
-citEntry(entry = "book",
+bibentry(bibtype = "Book",
   title = "Financial Risk Management with Bayesian Estimation of {GARCH} Models: Theory and Applications",
-  author = personList(as.person("David Ardia")),
+  author = c(person("David", "Ardia")),
   publisher = "Springer-Verlag",
   address = "Berlin, Germany",
   series = "Lecture Notes in Economics and Mathematical Systems",
@@ -23,8 +23,8 @@ citEntry(entry = "book",
                 "doi:10.1007/978-3-540-78657-3")
 )
 
-citEntry(entry = "Article",
-  author = personList(as.person("David Ardia"), person("Lennart F.","Hoogerheide")),
+bibentry(bibtype = "Article",
+  author = c(person("David", "Ardia"), person("Lennart F.", "Hoogerheide")),
   title = "Bayesian estimation of the {GARCH(1,1)} model with Student-t innovations",
   journal = "R Journal",
   volume = "2",
@@ -39,9 +39,9 @@ citEntry(entry = "Article",
                 "doi:10.32614/RJ-2010-014")
 )
 
-citEntry(entry = "Article",
+bibentry(bibtype = "Article",
   title = "Bayesian estimation of a Markov-switching threshold asymmetric {GARCH} model with Student-t innovations",
-  author = personList(as.person("David Ardia")),
+  author = c(person("David", "Ardia")),
   journal = "Econometrics Journal",
   volume = "12",
   number = "1",

@@ -74,8 +74,8 @@ void fnGarchC(int *n, int *order, double *alpha, double *delta,
         ht = ht + beta[j-1] * h[i-j];
     }
     h[i] = ht;
-    /* if simulation */
-    if (sim[i]==1)
+    /* if simulation -- u has length n, so guard the final h[n] iteration */
+    if (i < *n && sim[i]==1)
       u[i] = sqrt(ht) * u[i];
   }
 }
@@ -93,26 +93,6 @@ void fnFilterAlphaC(int *n, double *u, double *beta, double *vstar, double *lsta
   }
 }  
 
-/* asymmetric filter */
-void fnFilterAlphaAsymC(int *n, double *u, double *beta, double *vstar, 
-			double *vstarstar, double *lstar){
-  int i;
-  /* initialisation i=0 but t=1 */
-  vstar[0] = (u[0] * u[0]);
-  vstarstar[0] = (u[0] * u[0]);
-  lstar[0] = 0;
-  
-  for(i=1;i<*n;i++){
-    vstar[i] = *beta * vstar[i-1];
-    if(u[i]>=0)
-      vstar[i] = vstar[i] + (u[i] * u[i]);
-    vstarstar[i] = *beta * vstarstar[i-1];
-    if(u[i]<0)
-      vstarstar[i] = vstarstar[i] + (u[i] * u[i]);
-    lstar[i] = 1 + *beta * lstar[i-1];
-  }
-}  
-
 /* symmetric w */
 void fnFilterWC(int *n, double *u, double *alpha, double *beta, double *w){
   int i;
@@ -121,23 +101,6 @@ void fnFilterWC(int *n, double *u, double *alpha, double *beta, double *w){
   
   for(i=1;i<*n;i++)
     w[i] = (u[i] * u[i]) - alpha[0] - (alpha[1] + *beta) * (u[i-1] * u[i-1]) + *beta * w[i-1];
-}
-
-/* asymmetric w */
-void fnFilterWAsymC(int *n, double *u, double *alpha, double *beta, double *w){
-  int i;
-  /* initialisation i=0 but t=1 */
-  w[0] = (u[0] * u[0]) - alpha[0];
-  
-  for(i=1;i<*n;i++){
-    w[i] = (u[i] * u[i]) - alpha[0] + *beta * w[i-1];
-
-    /* asymmetries */
-    if (u[i-1]>=0) 
-      w[i] = w[i] - (alpha[1] + *beta) * (u[i-1] * u[i-1]);
-    if (u[i-1]<0)
-      w[i] = w[i] - (alpha[2] + *beta) * (u[i-1] * u[i-1]);
-  }
 }
 
 /* quasi difference between two vectors */

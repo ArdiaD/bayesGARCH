@@ -1,31 +1,34 @@
-## functions.R
+## sampler.R
 ## David Ardia
 
 ## bayesGARCH
 ## __input__
 ## y : time series
 ## mu.alpha = c(0,0) : prior mean for alpha
-## v.alpha = 1000 * diag(1,2) : prior covariance matrix for alpha
+## Sigma.alpha = 1000 * diag(1,2) : prior covariance matrix for alpha
 ## mu.beta = 0 : prior mean for beta
-## v.beta = 1000 : prior variance for beta
-## c.nu = 0.01
-## d.nu = 2 : prior mean of 102
+## Sigma.beta = 1000 : prior variance for beta
+## lambda = 0.01 : rate of the translated Exponential prior on nu
+## delta = 2 : lower bound of that prior; the prior mean of nu is delta + 1/lambda
 ## control = list() : a list with
-##           n.chain = 1: number of chain
-##           l.chain = 1000 : length of each chain
-##           start.val = c(0.01, 0.1, 0.7, 20) : starting valuesn
-##           addPriorConditions : a function
+##           n.chain : number of chains; defaults to nrow(start.val)
+##           l.chain = 10000 : length of each chain
+##           start.val = c(0.01, 0.1, 0.7, 100) : starting values, or one row per chain
+##           addPriorConditions : a function of psi returning TRUE if psi is admissible
 ##           digits = 4 : digits for the output
 ##           refresh = 10 : refreshing frequency
 ## __output__
-## r : a list of the class MCMC.list of length n.chain containing the MCMC outputs
+## r : an object of class mcmc.list of length n.chain containing the MCMC outputs
 "bayesGARCH" <- function(y, mu.alpha = c(0,0), Sigma.alpha = 1000 * diag(1,2),
                          mu.beta = 0, Sigma.beta = 1000,
                          lambda = 0.01, delta = 2, control = list()){
   if (missing(y))
     stop ("'y' is missing")
-  if (!is.vector(y))
-    stop ("'y' must be a vector")
+  ## a 'ts' or 'zoo' series is not a vector in the is.vector() sense, but it is
+  ## the natural input for this function
+  if (!is.numeric(y) || !is.null(dim(y)))
+    stop ("'y' must be a numeric vector")
+  y <- as.numeric(y)
   if (length(y) < 2)
     stop ("'y' must be a longer time series")
   if (any(is.na(y)))
@@ -75,12 +78,25 @@
                 mu.beta = mu.beta, iv.beta = iv.beta, c.nu = c.nu, d.nu = d.nu))
   
   con[names(control)] <- control
+  if (!is.numeric(con$l.chain) || length(con$l.chain) != 1 || con$l.chain < 2)
+    stop ("'control$l.chain' must be a scalar greater or equal than '2'")
   if (is.vector(con$start.val)) 
     con$start.val <- matrix(con$start.val, nrow = 1, byrow = TRUE)
+  con$start.val <- as.matrix(con$start.val)
+  if (ncol(con$start.val) != 4)
+    stop ("'control$start.val' must have four columns ('alpha0', 'alpha1', 'beta', 'nu')")
   if (is.null(con$n.chain)) 
     con$n.chain <- nrow(con$start.val)
-  else con$start.val <- matrix(rep(con$start.val, con$n.chain), 
-                               con$n.chain, byrow = TRUE)
+  else if (!is.numeric(con$n.chain) || length(con$n.chain) != 1 || con$n.chain < 1)
+    stop ("'control$n.chain' must be a positive scalar")
+  ## a single row of starting values is replicated across the chains; several rows
+  ## are used as they stand (one row per chain), which is what the documentation
+  ## promises. Before 2.2.0 the second case silently recycled the whole matrix and
+  ## then failed with an obscure 'dimnames' error.
+  else if (nrow(con$start.val) == 1)
+    con$start.val <- matrix(con$start.val, con$n.chain, 4, byrow = TRUE)
+  else if (nrow(con$start.val) != con$n.chain)
+    stop ("'control$n.chain' does not match the number of rows of 'control$start.val'")
   if (is.null(colnames(con$start.val))) 
     colnames(con$start.val) <- c("alpha0", "alpha1", "beta", "nu") 
   if (is.null(rownames(con$start.val))) 
@@ -96,44 +112,18 @@
                              con$hypers$mu.beta, con$hypers$iv.beta, con$hypers$c.nu, 
                              con$hypers$d.nu, con$addPriorConditions)
       if (con$refresh > 0 & j%%con$refresh == 0) 
-        cat("chain: ", i, " iteration: ", j, " parameters: ", 
-            round(chain[j, ], con$digits), "\n")
+        message("chain: ", i, " iteration: ", j, " parameters: ", 
+                paste(round(chain[j, ], con$digits), collapse = " "))
     }
+    ## proportion of iterations at which each parameter moved. A high rate is not
+    ## by itself evidence of good mixing: the accepted moves are typically small.
+    attr(chain, "move.rates") <- colMeans(abs(diff(as.matrix(chain))) > 0)
     r[[i]] <- chain
   }
   names(r) <- paste(rep("chain", con$n.chain), 1:con$n.chain, sep = "")
-  attr(r, "class") <- "mcmc.list"
+  r <- do.call(coda::mcmc.list, r)
+  names(r) <- paste(rep("chain", con$n.chain), 1:con$n.chain, sep = "")
   r
-}
-
-## cvGARCH
-## __input__
-## y : Tx1 time series
-## theta : vector of scedastic's function parameter, theta := (alpha, beta)
-## CSC : covariance statinarity condition
-## __ouput__
-## h : (T+1)x1 vector of conditional variances
-"cvGARCH" <- function(y, theta, CSC = FALSE){
-  if (missing(y))
-    stop ("'y' is missing")
-  if (!is.vector(y))
-    stop ("'y' should be a vector")
-  if (length(y) < 2)
-    stop ("'y' sould be a longer time series")
-  if (any(is.na(y)))
-    stop ("'y' contains 'NA' values")
-  if (missing(theta))
-    stop ("'theta' is missing")
-  if (!is.vector(theta))
-    stop ("'theta' should be a vector")
-  if (length(theta) != 3)
-    stop ("not appropriate size for 'theta'")
-  if (any(theta <= 0))
-    stop ("some components of 'theta' are not positive")
-  if (CSC && theta[2] + theta[3] >=1)
-    warning ("the covariance stationarity condition 'alpha1 + beta < 1' is violated")
-  
-  fn.cvGARCH(y, theta)
 }
 
 "fn.cvGARCH" <- function(y, theta){
@@ -157,7 +147,7 @@
 ## __output__
 ## mcmc matrix 
 "fn.initializeChain" <- function (l.chain, start.val){
-  r <- matrix(NA, l.chain, length(start.val), dimnames = list(1:l.chain, names(start.val)))
+  r <- matrix(NA_real_, l.chain, length(start.val), dimnames = list(1:l.chain, names(start.val)))
   r[1,] <- start.val
   
   coda::mcmc(r, start = 1)
@@ -172,20 +162,28 @@
 ## block of parameters
 "fn.block" <- function(y, alpha, beta, nu, alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu, addPriorConditions){
   
+  ## the w and alpha steps both condition on h evaluated at the current
+  ## (alpha, beta); compute it once
+  h <- fn.cvGARCH(y, c(alpha, beta))[seq_along(y)]
+
   w.new <- fn.w.full(y, alpha, beta, nu,
-                     alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu)	
+                     alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu, h = h)	
   
+  ## The prior constraint must enter EACH Metropolis step's acceptance test.
+  ## Applying it once to the whole block does not leave p(psi|y) I[psi in A]
+  ## invariant: the block is a composition of pi-reversible kernels, which is
+  ## pi-invariant but not itself pi-reversible.
   alpha.new <- fn.alpha.full(y, alpha, beta, nu, w.new,
-                             alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu)
+                             alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu, addPriorConditions,
+                             h = h)
 
   beta.new <- fn.beta.full(y, alpha.new, beta, nu, w.new,
-                           alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu)
+                           alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu, addPriorConditions)
 
   nu.new <- fn.nu.full(y, alpha.new, beta.new, nu, w.new,
-                       alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu)
+                       alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu, addPriorConditions)
 
-  psi.new <- c(alpha.new, beta.new, nu.new)
-  if (addPriorConditions(psi.new)) psi.new else c(alpha,beta,nu)
+  c(alpha.new, beta.new, nu.new)
 }
 
 ## fn.alpha.full
@@ -196,10 +194,12 @@
 ## __output__
 ## MH draw for alpha
 "fn.alpha.full" <- function(y, alpha.old, beta, nu, w,
-                            alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu){
+                            alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu,
+                            addPriorConditions = function(psi) TRUE, h = NULL){
   r <- alpha.old
   n <- length(y)
-  h <- fn.cvGARCH(y, c(alpha.old, beta))[1:n]
+  if (is.null(h))
+    h <- fn.cvGARCH(y, c(alpha.old, beta))[1:n]
   
   post.old <- fn.post.garch(y, w*h, alpha.old, beta, nu,
                             alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu)
@@ -210,7 +210,7 @@
   Dd.D <- fn.Dd.D(y^2/w, filter.alpha, tau,
                   alpha0, iv.alpha0)
   
-  alpha.new <- t( mvtnorm::rmvnorm(n = 1, mean = Dd.D$Dd, sigma = Dd.D$D) )
+  alpha.new <- fn.rmvnorm2(mean = Dd.D$Dd, sigma = Dd.D$D)
 
   if (all(alpha.new>0)){
     h.new <- fn.cvGARCH(y, c(alpha.new, beta))[1:n]
@@ -220,17 +220,17 @@
     post.new <- fn.post.garch(y, w*h.new, alpha.new, beta, nu,
                               alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu)
 
-    prop.new <- mvtnorm::dmvnorm(t(alpha.new), mean = Dd.D$Dd, sigma = Dd.D$D, log = TRUE)
+    prop.new <- fn.dmvnorm2(alpha.new, mean = Dd.D$Dd, sigma = Dd.D$D)
 		
     Dd.D <- fn.Dd.D(y^2/w, filter.alpha, tau.new,
                     alpha0, iv.alpha0)
 		
-    prop.old <- dmvnorm(alpha.old, mean = Dd.D$Dd, sigma = Dd.D$D, log = TRUE)
+    prop.old <- fn.dmvnorm2(alpha.old, mean = Dd.D$Dd, sigma = Dd.D$D)
 
     ratio <- post.new - post.old + prop.old - prop.new
 
     r.u <- runif(1)
-    if (r.u < min(1, exp(ratio)))
+    if (isTRUE(r.u < min(1, exp(ratio))) && addPriorConditions(c(alpha.new, beta, nu)))
       r <- alpha.new
   }
   
@@ -245,7 +245,8 @@
 ## __output__
 ## MH draw for beta
 "fn.beta.full" <- function(y, alpha, beta.old, nu, w,
-                           alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu){
+                           alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu,
+                           addPriorConditions = function(psi) TRUE){
   n <- length(y)
   r <- beta.old
   h <- fn.cvGARCH(y, c(alpha, beta.old))[1:n]
@@ -285,7 +286,7 @@
     ratio <- post.new - post.old + prop.old - prop.new
 
     r.u <- runif(1)
-    if (r.u < min(1, exp(ratio)))
+    if (isTRUE(r.u < min(1, exp(ratio))) && addPriorConditions(c(alpha, beta.new, nu)))
       r <- beta.new  
   }
   
@@ -300,11 +301,13 @@
 ## __output__
 ## draw for w
 "fn.w.full" <- function(u, alpha, beta, nu,
-                        alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu){
+                        alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu, h = NULL){
   n <- length(u)
-  h <- fn.cvGARCH(u, c(alpha, beta))[1:n]
+  if (is.null(h))
+    h <- fn.cvGARCH(u, c(alpha, beta))[1:n]
 
-  r <- rgamma(n = n, shape = 0.5 * rep((nu+1),n),
+  ## the shape is the same for every t; rgamma() recycles it
+  r <- rgamma(n = n, shape = 0.5 * (nu+1),
               rate = 0.5 * ((u^2/h) + (nu-2)) )
   
   1/r
@@ -320,9 +323,11 @@
 ## simulated nu
 "fn.nu.full" <- function(u, alpha, beta, nu.old, w,
                          alpha0, iv.alpha0, beta0, iv.beta0, c.nu, d.nu,
+                         addPriorConditions = function(psi) TRUE,
                          alpha.min = 0.00001, alpha.max = 500, k.max = 50000){
   n <- length(u)
   r <- nu.old
+  alpha.garch <- alpha          ## `alpha` below is reused for the exponential rate
 		
   phi <- 0.5 * sum(log(w) + 1/w) + c.nu
   
@@ -335,8 +340,6 @@
                          phi = phi)
   
   alpha <- optim.alpha$root
-  value <- optim.alpha$f.root
-  iter <- optim.alpha$iter
   if ( (alpha>alpha.min) && (alpha<alpha.max) ){
     k <- 0
     while (k<k.max){
@@ -347,7 +350,7 @@
       p <- fn.accept.proba(n, alpha, d.nu, nu.new, phi)
     
       r.u <- runif(1)
-      if(r.u < p){
+      if(isTRUE(r.u < p) && addPriorConditions(c(alpha.garch, beta, nu.new))){
         r = nu.new
         k = k.max
       }
@@ -444,17 +447,53 @@
      PACKAGE = 'bayesGARCH')$w
 }
 
+## fn.dmvnorm2 / fn.rmvnorm2
+## Log-density of, and a draw from, a bivariate Normal. These reproduce
+## mvtnorm::dmvnorm() and mvtnorm::rmvnorm(method = "eigen") operation for
+## operation, and therefore draw for draw from a given seed, without the
+## argument checking and dispatch that dominate their cost at p = 2.
+"fn.dmvnorm2" <- function(x, mean, sigma){
+  dec <- chol(sigma)
+  tmp <- backsolve(dec, x - mean, transpose = TRUE)
+
+  -sum(log(diag(dec))) - log(2*pi) - 0.5 * sum(tmp^2)
+}
+
+"fn.rmvnorm2" <- function(mean, sigma){
+  ev <- eigen(sigma, symmetric = TRUE)
+  R <- t( ev$vectors %*% (t(ev$vectors) * sqrt(pmax(ev$values, 0))) )
+
+  drop( matrix(rnorm(2), nrow = 1) %*% R ) + mean
+}
+
 ## fn.Dd.D
 ## compute D and Dd
+## The weighted cross-products are formed from the whitened regressors
+## Z := X / sqrt(h) rather than from X/h. Both give X' diag(1/h) X, but
+## crossprod(Z) goes through a symmetric rank-k update, so the result is
+## symmetric by construction and about five times closer to the exactly
+## rounded value; crossprod(Z, y/s) is likewise more accurate than
+## t(X/h) %*% y when the regressors change sign, as they do in the beta
+## step. It is also the cheaper of the two.
+##
+## The posterior precision is symmetric positive definite -- the prior
+## contributes iv.b0 -- so it is inverted through its Cholesky factor. Beyond
+## being faster than a general LU solve, chol2inv() returns an exactly
+## symmetric D, which solve() does not: it did so for fewer than half of the
+## matrices arising here. That matters because D is passed on to chol(), which
+## reads its upper triangle, and to eigen(symmetric = TRUE), which reads its
+## lower one. With an asymmetric D the covariance used to draw the candidate
+## and the covariance used to evaluate its density are not quite the same
+## matrix, and the Metropolis-Hastings ratio is correspondingly inconsistent.
+## The discrepancy is of the order of the rounding error and of no practical
+## consequence, but it costs nothing to remove.
 "fn.Dd.D" <- function(y, X, h, b0, iv.b0){
-  r <- list()
-  Xh <- X/h
-  D.inv <- t(Xh) %*% X + iv.b0
-  D <- solve(D.inv)
-  d <- t(Xh) %*% y + iv.b0 %*% b0
-  Dd <- D %*% d
+  s <- sqrt(h)
+  Z <- X/s
+  D <- chol2inv(chol(crossprod(Z) + iv.b0))
+  d <- crossprod(Z, y/s) + iv.b0 %*% b0
 
-  list(D = D, Dd = Dd)
+  list(D = D, Dd = D %*% d)
 }
 
 

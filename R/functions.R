@@ -29,7 +29,7 @@
     stop ("'l.bi' must be a scalar")
   if (l.bi < 0)
     stop ("'l.bi' must be positive")
-  if (!is.vector(batch.size) || length(l.bi) != 1)
+  if (!is.vector(batch.size) || length(batch.size) != 1)
     stop ("'batch.size' must be a scalar")
   if (batch.size < 1)
     stop ("'batch.size' must be larger or equal than 1")
@@ -43,9 +43,9 @@
   theM <- theM[seqk]
   for (i in 1:n.chain)
     r <- rbind(r, MCMC[[i]][theM, ])
-  cat("\nn.chain: ", n.chain, "\nl.chain: ", l.chain, "\nl.bi: ", l.bi, "\nbatch.size: ",
-      batch.size, "\nsmpl size: ", nrow(r), "\n")
+  message("n.chain: ", n.chain, "  l.chain: ", l.chain, "  l.bi: ", l.bi,
+          "  batch.size: ", batch.size, "  smpl size: ", nrow(r))
   dimnames(r) <- list(1:nrow(r), colnames(MCMC[[1]]))
 
-  mcmc(r, start = 1)
+  coda::mcmc(r, start = 1)
 }

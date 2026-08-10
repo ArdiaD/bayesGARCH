@@ -1,5 +1,5 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
-^Contributing.md$
-paper/
-bin
+^CONTRIBUTING\.md$
+^paper$
+^bin$
