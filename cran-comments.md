@@ -34,12 +34,17 @@ There are no reverse dependencies on CRAN, so nothing downstream is affected.
 
 ## Test environments
 
+* macOS builder (mac.r-project.org), macOS arm64, R 4.6.1, clang-1700.6.3.2 --
+  **Status: OK** (errors: no, warnings: no, notes: no)
+* win-builder, R-devel and R-release
 * local: macOS 26.6.1, aarch64-apple-darwin20, R 4.5.2, Apple clang 21.0.0
 
 ## R CMD check results
 
-`R CMD check --as-cran` reports one WARNING and no ERRORs or NOTEs. The warning
-does not come from this package's sources:
+No ERRORs, WARNINGs or NOTEs on the macOS builder.
+
+The local run reports one WARNING, which does not come from this package's
+sources and does not reproduce elsewhere:
 
 ```
 * checking whether package 'bayesGARCH' can be installed ... WARNING
@@ -52,8 +57,9 @@ It is emitted while compiling `#include <R_ext/Rdynload.h>`: R's own
 `R_ext/Boolean.h` contains `#pragma clang diagnostic ignored
 "-Wfixed-enum-extension"`, and the Apple clang 21 shipped with the current macOS
 command line tools does not know that warning group. Both package source files
-compile with no warnings of their own under `-Wall`. I expect this not to appear
-on the CRAN build machines.
+compile with no warnings of their own under `-Wall`, and the macOS builder,
+which uses clang-1700, reports `checking whether package 'bayesGARCH' can be
+installed ... OK`.
 
 `checking CRAN incoming feasibility` is OK.
 
