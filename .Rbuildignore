@@ -1,5 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^CONTRIBUTING\.md$
+^cran-comments\.md$
 ^paper$
 ^bin$
