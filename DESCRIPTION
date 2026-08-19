@@ -1,6 +1,6 @@
 Package: bayesGARCH
 Version: 2.2.0
-Date: 2026-08-10
+Date: 2026-08-19
 Title: Bayesian Estimation of the GARCH(1,1) Model with Student-t
         Innovations
 Authors@R: person("David", "Ardia", role = c("aut", "cre", "cph", "fnd"),

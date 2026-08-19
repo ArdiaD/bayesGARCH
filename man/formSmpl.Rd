@@ -9,9 +9,13 @@
 }
 \arguments{%
   \item{MCMC}{object of the class \code{mcmc.list} (\R package
-    \pkg{coda}) or a list of matrices or a matrix.}
-  \item{l.bi}{length of the \emph{burn-in} phase.}
-  \item{batch.size}{batching size used to diminish the autocorrelation within the chains.}
+    \pkg{coda}) or a list of matrices or a matrix. When several chains are
+    given they must share the same number of rows and columns and the same
+    column names.}
+  \item{l.bi}{length of the \emph{burn-in} phase, a whole number smaller than
+    the chain length.}
+  \item{batch.size}{batching size used to diminish the autocorrelation within
+    the chains, a whole number greater or equal than one.}
 }
 \value{%
   The joint posterior sample as an \code{mcmc} object (\R package \pkg{coda}).

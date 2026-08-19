@@ -55,11 +55,19 @@
       is taken to be the number of rows.}
     \item{\code{l.chain}}{length of each MCMC chain. Default: \code{l.chain=10000}.}
     \item{\code{start.val}}{vector of starting values of
-      chain(s). Default: \code{start.val=c(0.01,0.1,0.7,100)}. A matrix of
+      chain(s). Default: \code{c(0.01, 0.1, 0.7, delta + 1/lambda)}, whose last
+      entry is the prior mean of \eqn{\nu}{nu} and therefore lies in the prior
+      support for any \code{delta}. A matrix of
       size \eqn{n \times 4}{nx4}
       containing starting values in rows can also be provided. This will generate \eqn{n} chains starting at the
       different row values. A vector, or a matrix with a single row, is
-      replicated across the \code{n.chain} chains.}
+      replicated across the \code{n.chain} chains.
+
+      Every row must lie in the support of the posterior: \eqn{\alpha_0,
+      \alpha_1, \beta > 0}{alpha0, alpha1, beta > 0}, \eqn{\nu >
+      \delta}{nu > delta}, and, when \code{addPriorConditions} is used, it must
+      satisfy that condition as well. Rows that do not are rejected with an
+      error naming the row and the condition it fails. See *Note*.}
     \item{\code{addPriorConditions}}{function which allows the user to add constraints on the model parameters. 
       Default: \code{NULL}, i.e. not additional constraints are imposed (see below).}
     \item{\code{refresh}}{frequency of reports. Default: \code{refresh=10} iterations.}
@@ -98,8 +106,9 @@ By using \code{bayesGARCH} you agree to the following rules:
     h(t) := alpha0 + alpha1 * y(t-1)^2 + beta * h(t-1)
   }
   where \eqn{\alpha_0 > 0, \alpha_1 \ge 0, \beta \ge 0}{alpha0>0,alpha1,beta>=0} to ensure a
-  positive conditional variance. We set the initial variance to
-  \eqn{h_0 := 0}{h(0):=0} for convenience. The parameter \eqn{\varrho :=
+  positive conditional variance. We set the initial variance and the initial
+  observation to \eqn{h_0 := 0}{h(0):=0} and \eqn{y_0 := 0}{y(0):=0} for
+  convenience, so that \eqn{h_1 = \alpha_0}{h(1)=alpha0}. The parameter \eqn{\varrho :=
     (\nu-2)/\nu}{varrho:=(nu-2)/nu} is a scaling factor which ensures
   the conditional variance of \eqn{y_t}{y(t)} to be
   \eqn{h_t}{h(t)}. Finally, \eqn{\epsilon_t}{e(t)}
@@ -189,6 +198,15 @@ By using \code{bayesGARCH} you agree to the following rules:
   can diminish the acceptance rate and therefore
   lead to a very inefficient sampler. This would however indicate that the
   condition is not supported by the data.
+
+  The chain must \emph{start} in the constrained region. Every step only ever
+  accepts a move into it, so a chain started outside can never enter: the
+  starting value would be returned unchanged at every iteration and the whole
+  sample would consist of draws the posterior gives zero mass. This is easy to
+  trigger by accident, since the advice below to start from the parameter values
+  of a previous estimation step will supply an unconstrained estimate that need
+  not satisfy the constraint. Starting values are therefore validated against
+  \code{addPriorConditions} before any chain is generated.
 
   The constraint enters the acceptance test of \emph{each}
   Metropolis-Hastings step, so that the sampler leaves the constrained

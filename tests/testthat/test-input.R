@@ -13,8 +13,8 @@ test_that("bayesGARCH rejects malformed arguments", {
   expect_error(bayesGARCH(y, Sigma.alpha = diag(1, 3)), "appropriate size")
   expect_error(bayesGARCH(y, Sigma.alpha = matrix(c(1, 2, 3, 1), 2)), "not symmetric")
   expect_error(bayesGARCH(y, Sigma.alpha = matrix(c(1, 2, 2, 1), 2)), "positive definite")
-  expect_error(bayesGARCH(y, Sigma.beta = -1), "must be positive")
-  expect_error(bayesGARCH(y, lambda = -1), "must be positive")
+  expect_error(bayesGARCH(y, Sigma.beta = -1), "finite positive value")
+  expect_error(bayesGARCH(y, lambda = -1), "finite positive value")
   expect_error(bayesGARCH(y, delta = 1), "lower than '2'")
   expect_error(bayesGARCH(y, control = 1), "'control' must be a list")
   expect_error(bayesGARCH(y, control = list(addPriorConditions = 1)), "NULL or a function")
@@ -92,7 +92,7 @@ test_that("formSmpl validates its arguments and batches correctly", {
 
   expect_error(formSmpl(), "'MCMC' is missing")
   expect_error(formSmpl("a"), "neither a list or a matrix")
-  expect_error(formSmpl(M, l.bi = -1), "must be positive")
+  expect_error(formSmpl(M, l.bi = -1), "non-negative whole number")
   expect_error(formSmpl(M, l.bi = 10), "l.bi >= l.chain")
   expect_error(formSmpl(M, batch.size = 0), "larger or equal than 1")
   ## validated 'l.bi' instead of 'batch.size' before 2.2.0
@@ -103,4 +103,51 @@ test_that("formSmpl validates its arguments and batches correctly", {
   expect_s3_class(r, "mcmc")
   expect_equal(nrow(r), 4L)          # rows 3,5,7,9
   expect_equal(as.numeric(r[, 1]), c(3, 5, 7, 9))
+})
+
+test_that("unknown control components are rejected", {
+  ## 'hypers' is internal and used to bypass the validated hyper-parameters
+  expect_error(
+    bayesGARCH(y, control = list(l.chain = 3, refresh = 0,
+      hypers = list(mu.alpha = c(0, 0), iv.alpha = solve(1000 * diag(1, 2)),
+                    mu.beta = 0, iv.beta = 1/1000, c.nu = -5, d.nu = 2))),
+    "unknown component")
+  ## a mistyped component would otherwise be ignored and the default used
+  expect_error(bayesGARCH(y, control = list(l.chian = 5, refresh = 0)), "l.chian")
+  expect_silent(bayesGARCH(y, control = list(l.chain = 3, refresh = 0)))
+})
+
+test_that("count-like controls must be finite whole numbers", {
+  for (bad in list(2.5, NA, NaN, Inf, -1))
+    expect_error(bayesGARCH(y, control = list(l.chain = bad)), "control\\$l.chain")
+  for (bad in list(1.5, NA, Inf, 0))
+    expect_error(bayesGARCH(y, control = list(l.chain = 3, n.chain = bad)), "control\\$n.chain")
+  for (bad in list(NA, Inf, -1, 0.5))
+    expect_error(bayesGARCH(y, control = list(l.chain = 3, refresh = bad)), "control\\$refresh")
+  for (bad in list(NA, Inf, -1, 0.5))
+    expect_error(bayesGARCH(y, control = list(l.chain = 3, digits = bad)), "control\\$digits")
+})
+
+test_that("non-finite data and hyper-parameters are rejected up front", {
+  expect_error(bayesGARCH(c(y[1:50], Inf), control = list(l.chain = 3)), "non-finite")
+  expect_error(bayesGARCH(y, mu.beta = Inf, control = list(l.chain = 3)), "'mu.beta' must be finite")
+  expect_error(bayesGARCH(y, Sigma.beta = Inf, control = list(l.chain = 3)), "'Sigma.beta'")
+  expect_error(bayesGARCH(y, lambda = Inf, control = list(l.chain = 3)), "'lambda'")
+  expect_error(bayesGARCH(y, delta = Inf, control = list(l.chain = 3)), "'delta' must be finite")
+  expect_error(bayesGARCH(y, mu.alpha = c(0, Inf), control = list(l.chain = 3)), "'mu.alpha' must be finite")
+  expect_error(bayesGARCH(y, Sigma.alpha = matrix(c(1000, 0, 0, Inf), 2),
+                          control = list(l.chain = 3)), "'Sigma.alpha' must be finite")
+})
+
+test_that("formSmpl rejects malformed chain lists and non-integer settings", {
+  M <- matrix(seq_len(40), 10, 4, dimnames = list(NULL, c("alpha0", "alpha1", "beta", "nu")))
+  expect_error(formSmpl(list(), l.bi = 1), "empty")
+  expect_error(formSmpl(list(M, M[, 1:3]), l.bi = 2), "same number of columns")
+  expect_error(formSmpl(list(M, M[1:5, ]), l.bi = 2), "same number of rows")
+  expect_error(formSmpl(list(M, unname(M)), l.bi = 2), "same column names")
+  expect_error(formSmpl(list(M, "a"), l.bi = 2), "must be a matrix")
+  expect_error(formSmpl(M, l.bi = 2.5), "whole number")
+  expect_error(formSmpl(M, l.bi = Inf), "whole number")
+  expect_error(formSmpl(M, l.bi = 2, batch.size = Inf), "whole number")
+  expect_error(formSmpl(M, l.bi = 2, batch.size = 1.5), "whole number")
 })

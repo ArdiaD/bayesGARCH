@@ -9,14 +9,22 @@ package, and I would rather flag it than have it noticed later.
 
 `bayesGARCH()` accepts a `control$addPriorConditions` function with which the
 user restricts the parameter space, most commonly to the covariance-stationary
-region. That constraint was applied once to the whole block of parameters,
+region. Two defects affected it.
+
+First, the constraint was applied once to the whole block of parameters,
 accepting or rejecting the entire sweep on its final value. Each sub-step of the
 sweep is reversible with respect to the unconstrained posterior, but their
 composition is only invariant and not itself reversible, so rejecting the block
 does not leave the constrained posterior invariant. The chain converged to the
 wrong distribution. The constraint now enters the acceptance test of each step.
 
-Calls that did not use `addPriorConditions` were unaffected by the bug and
+Second, starting values were not checked against that constraint. Since every
+step only accepts a move into the admissible region, a chain started outside it
+could never enter, and returned the starting value at every iteration without
+warning. Starting values are now validated and rejected with an error naming the
+row and the failed condition.
+
+Calls that did not use `addPriorConditions` were unaffected by either defect and
 target the same posterior as before.
 
 ## Results change
@@ -30,13 +38,18 @@ targeted is unchanged; I verified this against version 2.1.10 over long runs
 p between 0.96 and 0.99), and verified the corrected constrained sampler against
 an independent random-walk Metropolis implementation sharing no code.
 
-There are no reverse dependencies on CRAN, so nothing downstream is affected.
+There is one reverse dependency, `miscFuncs`, which suggests `bayesGARCH`. Its
+`fcastGARCH()` consumes an MCMC chain matrix from `bayesGARCH()`. I checked it
+against this version: the returned object, its `chain1` element, and the column
+layout are unchanged, and `fcastGARCH()` produces finite forecasts as before.
+Nothing downstream is affected.
 
 ## Test environments
 
 * macOS builder (mac.r-project.org), macOS arm64, R 4.6.1, clang-1700.6.3.2 --
   **Status: OK** (errors: no, warnings: no, notes: no)
-* win-builder, R-devel and R-release
+* win-builder, R-devel -- **Status: OK**
+* win-builder, R-release -- **Status: OK**
 * local: macOS 26.6.1, aarch64-apple-darwin20, R 4.5.2, Apple clang 21.0.0
 
 ## R CMD check results

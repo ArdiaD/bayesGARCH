@@ -33,30 +33,40 @@
     stop ("'y' must be a longer time series")
   if (any(is.na(y)))
     stop ("'y' contains 'NA' values")
-  if (!is.vector(mu.alpha))
-    stop ("'mu.alpha' must be a vector")
+  if (any(!is.finite(y)))
+    stop ("'y' contains non-finite values")
+  if (!is.vector(mu.alpha) || !is.numeric(mu.alpha))
+    stop ("'mu.alpha' must be a numeric vector")
   if (length(mu.alpha) != 2) 
     stop ("'mu.alpha' is not of appropriate size")
-  if (!is.matrix(Sigma.alpha))
-    stop ("'Sigma.alpha' must be a matrix")
+  if (any(!is.finite(mu.alpha)))
+    stop ("'mu.alpha' must be finite")
+  if (!is.matrix(Sigma.alpha) || !is.numeric(Sigma.alpha))
+    stop ("'Sigma.alpha' must be a numeric matrix")
   if (!all(dim(Sigma.alpha) == c(2, 2))) 
     stop ("'Sigma.alpha' is not of appropriate size")
+  if (any(!is.finite(Sigma.alpha)))
+    stop ("'Sigma.alpha' must be finite")
   if (Sigma.alpha[1,2] != Sigma.alpha[2,1])
     stop ("'Sigma.alpha' is not symmetric")
-  if (any(eigen(Sigma.alpha)$values <= 0))
+  if (any(eigen(Sigma.alpha, symmetric = TRUE, only.values = TRUE)$values <= 0))
     stop ("'Sigma.alpha' is not positive definite")
-  if (!is.vector(mu.beta) || length(mu.beta) != 1)
+  if (!is.vector(mu.beta) || !is.numeric(mu.beta) || length(mu.beta) != 1)
     stop ("'mu.beta' must be a scalar")
-  if (!is.vector(Sigma.beta) || length(Sigma.beta) != 1)
+  if (!is.finite(mu.beta))
+    stop ("'mu.beta' must be finite")
+  if (!is.vector(Sigma.beta) || !is.numeric(Sigma.beta) || length(Sigma.beta) != 1)
     stop ("'Sigma.beta' must be a scalar")
-  if (Sigma.beta <= 0)
-    stop ("'Sigma.beta' must be positive")
-  if (!is.vector(lambda) || length(lambda) != 1)
+  if (!is.finite(Sigma.beta) || Sigma.beta <= 0)
+    stop ("'Sigma.beta' must be a finite positive value")
+  if (!is.vector(lambda) || !is.numeric(lambda) || length(lambda) != 1)
     stop ("'lambda' must be a scalar")
-  if (lambda <= 0)
-    stop ("'lambda' must be positive")
-  if (!is.vector(delta) || length(delta) != 1)
+  if (!is.finite(lambda) || lambda <= 0)
+    stop ("'lambda' must be a finite positive value")
+  if (!is.vector(delta) || !is.numeric(delta) || length(delta) != 1)
     stop ("'delta' must be a scalar")
+  if (!is.finite(delta))
+    stop ("'delta' must be finite")
   if (delta < 2)
     stop ("'delta' cannot be lower than '2'")
   if (!is.list(control))
@@ -68,40 +78,98 @@
   fn.bayesGARCH(y, mu.alpha, solve(Sigma.alpha), mu.beta, 1/Sigma.beta, lambda, delta, control)
 }
 
+## fn.checkCount
+## a control parameter that counts something: a single finite whole number
+"fn.checkCount" <- function(x, name, min){
+  if (!is.numeric(x) || length(x) != 1 || !is.finite(x) || x != round(x) || x < min)
+    stop ("'", name, "' must be a single finite whole number greater or equal than '", min, "'")
+
+  invisible(TRUE)
+}
+
+## fn.checkStartVal
+## Every chain must start inside the support of the posterior it is meant to
+## explore. The Metropolis-Hastings steps only ever accept a move into the
+## admissible region, so a chain started outside it can never enter: the
+## starting value is returned unchanged at every iteration, and the whole sample
+## is made of draws that the target gives zero mass. Rather than let that pass
+## silently, the starting values are checked up front.
+"fn.checkStartVal" <- function(start.val, d.nu, addPriorConditions){
+  nms <- c("alpha0", "alpha1", "beta", "nu")
+  for (i in 1:nrow(start.val)) {
+    psi <- start.val[i,]
+    lab <- paste0("'control$start.val' row ", i)
+    if (any(!is.finite(psi)))
+      stop (lab, " contains non-finite values")
+    if (any(psi[1:3] <= 0))
+      stop (lab, ": ", paste(nms[1:3][psi[1:3] <= 0], collapse = ", "),
+            " must be positive")
+    if (psi[4] <= d.nu)
+      stop (lab, ": 'nu' must be greater than 'delta' (", format(d.nu), ")")
+    ok <- try(addPriorConditions(psi), silent = TRUE)
+    if (inherits(ok, "try-error"))
+      stop (lab, ": 'control$addPriorConditions' failed when applied to it")
+    if (!isTRUE(ok))
+      stop (lab, " does not satisfy 'control$addPriorConditions'")
+  }
+
+  invisible(TRUE)
+}
+
 ## sub function fn.bayesGARCH
 "fn.bayesGARCH" <- function(y, mu.alpha, iv.alpha, mu.beta, iv.beta, c.nu, d.nu, control){
 
+  ## the default starting value for nu is the prior mean delta + 1/lambda, so that
+  ## it lies in the prior support whatever 'delta' is. A fixed value would sit
+  ## outside it for the Normal special case, where delta = 500.
   con <- list(n.chain = NULL, l.chain = 10000, addPriorConditions = NULL, digits = 4, refresh = 10,
-              start.val = matrix(c(0.01,0.1, 0.7, 100), 1, 4,
+              start.val = matrix(c(0.01, 0.1, 0.7, d.nu + 1/c.nu), 1, 4,
                 dimnames = list("chain1", c("alpha0", "alpha1", "beta", "nu"))),
               hypers = list(mu.alpha = mu.alpha, iv.alpha = iv.alpha,
                 mu.beta = mu.beta, iv.beta = iv.beta, c.nu = c.nu, d.nu = d.nu))
-  
+
+  ## 'hypers' is internal: the hyper-parameters are validated as arguments of
+  ## bayesGARCH() and must not be replaceable through 'control'.
+  known <- c("n.chain", "l.chain", "start.val", "addPriorConditions", "refresh", "digits")
+  if (is.null(names(control)) && length(control) > 0L)
+    stop ("'control' must be a named list")
+  unknown <- setdiff(names(control), known)
+  if (length(unknown) > 0L)
+    stop ("unknown component(s) in 'control': ", paste(sQuote(unknown), collapse = ", "),
+          ". Valid components are ", paste(sQuote(known), collapse = ", "), ".")
   con[names(control)] <- control
-  if (!is.numeric(con$l.chain) || length(con$l.chain) != 1 || con$l.chain < 2)
-    stop ("'control$l.chain' must be a scalar greater or equal than '2'")
+
+  fn.checkCount(con$l.chain, "control$l.chain", 2)
+  fn.checkCount(con$refresh, "control$refresh", 0)
+  fn.checkCount(con$digits,  "control$digits",  0)
   if (is.vector(con$start.val)) 
     con$start.val <- matrix(con$start.val, nrow = 1, byrow = TRUE)
+  if (!is.numeric(con$start.val))
+    stop ("'control$start.val' must be numeric")
   con$start.val <- as.matrix(con$start.val)
   if (ncol(con$start.val) != 4)
     stop ("'control$start.val' must have four columns ('alpha0', 'alpha1', 'beta', 'nu')")
+  if (nrow(con$start.val) < 1)
+    stop ("'control$start.val' must have at least one row")
   if (is.null(con$n.chain)) 
     con$n.chain <- nrow(con$start.val)
-  else if (!is.numeric(con$n.chain) || length(con$n.chain) != 1 || con$n.chain < 1)
-    stop ("'control$n.chain' must be a positive scalar")
   ## a single row of starting values is replicated across the chains; several rows
   ## are used as they stand (one row per chain), which is what the documentation
   ## promises. Before 2.2.0 the second case silently recycled the whole matrix and
   ## then failed with an obscure 'dimnames' error.
-  else if (nrow(con$start.val) == 1)
-    con$start.val <- matrix(con$start.val, con$n.chain, 4, byrow = TRUE)
-  else if (nrow(con$start.val) != con$n.chain)
-    stop ("'control$n.chain' does not match the number of rows of 'control$start.val'")
+  else {
+    fn.checkCount(con$n.chain, "control$n.chain", 1)
+    if (nrow(con$start.val) == 1)
+      con$start.val <- matrix(con$start.val, con$n.chain, 4, byrow = TRUE)
+    else if (nrow(con$start.val) != con$n.chain)
+      stop ("'control$n.chain' does not match the number of rows of 'control$start.val'")
+  }
   if (is.null(colnames(con$start.val))) 
     colnames(con$start.val) <- c("alpha0", "alpha1", "beta", "nu") 
   if (is.null(rownames(con$start.val))) 
     rownames(con$start.val) <- paste(rep("chain", con$n.chain), 1:con$n.chain, sep = "")
   if (is.null(con$addPriorConditions)) {con$addPriorConditions <- function(psi){TRUE}}
+  fn.checkStartVal(con$start.val, d.nu, con$addPriorConditions)
   r <- list()
   for (i in 1:con$n.chain) {
     k <- NULL
@@ -350,8 +418,15 @@
       p <- fn.accept.proba(n, alpha, d.nu, nu.new, phi)
     
       r.u <- runif(1)
-      if(isTRUE(r.u < p) && addPriorConditions(c(alpha.garch, beta, nu.new))){
-        r = nu.new
+      if(isTRUE(r.u < p)){
+        ## nu.new is now an exact draw from the full conditional, so imposing the
+        ## prior constraint is an independence Metropolis-Hastings step whose
+        ## ratio reduces to the indicator: keep the draw if it is admissible and
+        ## the current value otherwise. Testing the constraint inside the
+        ## accept-reject loop instead would spin for all 'k.max' proposals
+        ## whenever no value of nu can satisfy it, which is the usual case since
+        ## conditions such as alpha1 + beta < 1 do not involve nu at all.
+        if (addPriorConditions(c(alpha.garch, beta, nu.new))) r <- nu.new
         k = k.max
       }
     }

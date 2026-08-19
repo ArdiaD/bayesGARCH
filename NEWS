@@ -13,6 +13,46 @@ Changes in Version 2.2.0
     Runs WITHOUT 'addPriorConditions' target the same posterior as before and
     need not be revisited; see the note on numerical changes below for why
     they are nonetheless no longer reproduced bit for bit from a given seed.
+  o BUG FIX, AFFECTS RESULTS: starting values are now required to lie in the
+    support of the posterior, and are rejected with an error naming the row and
+    the failed condition otherwise. Every Metropolis-Hastings step only accepts
+    a move into the admissible region, so a chain started outside it could never
+    enter: the starting value was returned unchanged at every iteration and the
+    whole sample consisted of draws the posterior gives zero mass, with no
+    warning. A chain started at alpha1 + beta = 1.3 under the covariance
+    stationarity constraint returned 200 identical inadmissible draws out of
+    200. This was easy to trigger by accident, since the documented advice to
+    start from the parameters of a previous estimation step supplies an
+    unconstrained estimate; on the dem2gbp benchmark the unconstrained posterior
+    puts 62% of its mass outside the covariance stationary region.
+  o BUG FIX: the nu step tested 'control$addPriorConditions' inside its
+    accept-reject loop, so it exhausted all 50000 proposals whenever no value of
+    nu could satisfy the condition, which is the usual case since conditions
+    such as alpha1 + beta < 1 do not involve nu. The draw is now taken from the
+    full conditional first and the condition applied once afterwards, as an
+    independence Metropolis-Hastings step whose ratio reduces to the indicator.
+    This is equivalent when the condition is satisfiable and roughly thirty
+    times faster when it is not.
+  o The default starting value for nu is now the prior mean, delta + 1/lambda,
+    rather than a fixed 100. The fixed value lay below the prior support for the
+    Normal special case documented under 'lambda = 100, delta = 500'.
+  o Unknown components of 'control' are now rejected rather than silently
+    ignored, so that a mistyped name is reported instead of leaving the default
+    in force. The internal 'hypers' component is no longer reachable through
+    'control'; it could be used to replace hyper-parameters that had already
+    been validated as arguments of bayesGARCH().
+  o 'y' and all hyper-parameters must now be finite. In particular
+    'Sigma.beta = Inf' was previously accepted and silently imposed an improper
+    prior; other non-finite inputs failed later with implementation-level
+    messages from .C() or uniroot().
+  o 'control$l.chain', 'control$n.chain', 'control$refresh' and
+    'control$digits' must now be finite whole numbers. Fractional values were
+    silently truncated, and NA values failed inside the sampling loop or printed
+    meaningless progress reports.
+  o formSmpl() now requires a non-empty list of matrices sharing the same
+    dimensions and column names, and whole-number 'l.bi' and 'batch.size'. In
+    particular 'batch.size = Inf' previously returned a single row of NA rather
+    than signalling an error.
   o BUG FIX: supplying 'control$n.chain' together with a 'control$start.val'
     matrix of several rows failed with "length of 'dimnames' [2] not equal to
     array extent". Several rows are now used as documented (one per chain), a
