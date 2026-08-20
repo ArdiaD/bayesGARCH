@@ -45,6 +45,18 @@
   Ardia and Hoogerheide (2010). Finally, we refer to 
   Ardia (2009) for an extension of the algorithm to Markov-switching GARCH models.
 
+  The series is rescaled internally to unit root mean square before sampling and
+  the draws are mapped back, so that results do not depend on the units of
+  \code{y}. Only \eqn{\alpha_0}{alpha0} carries that scale: under \eqn{y \to
+  y/s}{y -> y/s} one has \eqn{\alpha_0 \to \alpha_0/s^2}{alpha0 -> alpha0/s^2}
+  while \eqn{\alpha_1}{alpha1}, \eqn{\beta}{beta} and \eqn{\nu}{nu} are
+  unchanged, and the Normal prior on \eqn{\alpha}{alpha} transforms exactly
+  under that map, so the posterior explored is the same one. The factor is a
+  power of two, which makes the rescaling and its inverse exact in binary
+  floating point. Note that the prior itself is stated in the units of \code{y};
+  rescaling \code{y} without rescaling \code{Sigma.alpha} changes the posterior,
+  because a prior that is diffuse on one scale is informative on another.
+
   The \code{control} argument is a list that can supply any of
   the following components:
 
@@ -57,7 +69,10 @@
     \item{\code{start.val}}{vector of starting values of
       chain(s). Default: \code{c(0.01, 0.1, 0.7, delta + 1/lambda)}, whose last
       entry is the prior mean of \eqn{\nu}{nu} and therefore lies in the prior
-      support for any \code{delta}. A matrix of
+      support for any \code{delta}, and whose first entry applies to the
+      internally rescaled series (see *Details*), making it independent of the
+      units of \code{y}. A value supplied by the user is read in the units of
+      \code{y}. A matrix of
       size \eqn{n \times 4}{nx4}
       containing starting values in rows can also be provided. This will generate \eqn{n} chains starting at the
       different row values. A vector, or a matrix with a single row, is
@@ -69,7 +84,10 @@
       satisfy that condition as well. Rows that do not are rejected with an
       error naming the row and the condition it fails. See *Note*.}
     \item{\code{addPriorConditions}}{function which allows the user to add constraints on the model parameters. 
-      Default: \code{NULL}, i.e. not additional constraints are imposed (see below).}
+      Default: \code{NULL}, i.e. not additional constraints are imposed (see below).
+      It must return a single non-missing \code{TRUE} or \code{FALSE} for every
+      parameter vector it is given, both for the starting values and for the
+      states proposed during sampling.}
     \item{\code{refresh}}{frequency of reports. Default: \code{refresh=10} iterations.}
     \item{\code{digits}}{number of printed digits in the
       reports. Default: \code{digits=4}.}
@@ -239,8 +257,13 @@ By using \code{bayesGARCH} you agree to the following rules:
   so it is almost impossible for this MCMC sampler to get stuck at a given value for many subsequent draws.
   A high proportion of accepted moves should not be read as good mixing, however: the accepted moves
   are typically small, and the resulting chains are strongly autocorrelated, as noted above.
-  In the unlikely case that such ill behavior would occur, one could scale the data (to have standard deviation 1),
-  or run the algorithm with different initial values or a different random seed.
+  In the unlikely case that such ill behavior would occur, one could
+  run the algorithm with different initial values or a different random seed.
+  Rescaling the data is no longer necessary: it is done internally, as described
+  in *Details*. Before version 2.2.0 a series whose scale was far from unity ---
+  log-returns in decimals rather than in percent was already enough --- could
+  have every \eqn{\alpha}{alpha} and \eqn{\beta}{beta} move rejected, leaving a
+  chain that never moved and eventually failed in the \eqn{\nu}{nu} update.
 }
 \author{%
   David Ardia \email{david.ardia.ch@gmail.com}

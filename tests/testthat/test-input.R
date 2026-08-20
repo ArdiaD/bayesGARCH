@@ -151,3 +151,50 @@ test_that("formSmpl rejects malformed chain lists and non-integer settings", {
   expect_error(formSmpl(M, l.bi = 2, batch.size = Inf), "whole number")
   expect_error(formSmpl(M, l.bi = 2, batch.size = 1.5), "whole number")
 })
+
+test_that("addPriorConditions is validated identically at the start and at proposals", {
+  ok  <- function(psi) psi[2] + psi[3] < 1
+  ## a function returning a truthy number is legitimate and was rejected up front
+  ## while being accepted at proposal time
+  num <- function(psi) as.numeric(psi[2] + psi[3] < 1)
+  expect_silent(bayesGARCH(y, control = list(l.chain = 5, refresh = 0,
+                                             addPriorConditions = num)))
+  m <- bayesGARCH(y, control = list(l.chain = 20, refresh = 0,
+                                    addPriorConditions = num))
+  expect_true(all(as.matrix(m[[1]])[, "alpha1"] + as.matrix(m[[1]])[, "beta"] < 1))
+
+  ## malformed results are refused with the same message wherever they occur
+  expect_error(bayesGARCH(y, control = list(l.chain = 5, addPriorConditions = function(psi) NA)),
+               "single non-missing")
+  expect_error(bayesGARCH(y, control = list(l.chain = 5,
+                 addPriorConditions = function(psi) c(TRUE, TRUE))), "single non-missing")
+  expect_error(bayesGARCH(y, control = list(l.chain = 5,
+                 addPriorConditions = function(psi) "yes")), "single non-missing")
+  expect_error(bayesGARCH(y, control = list(l.chain = 5,
+                 addPriorConditions = function(psi) stop("boom"))), "boom")
+
+  ## a condition that only misbehaves at proposed states is reported the same way
+  bad <- function(psi) if (psi[1] > 0 && psi[2] > 0.1000001) NA else TRUE
+  expect_error(bayesGARCH(y, control = list(l.chain = 60, refresh = 0,
+                 start.val = c(0.01, 0.1, 0.7, 10), addPriorConditions = bad)),
+               "single non-missing")
+})
+
+test_that("priors too concentrated to invert are refused with a clear message", {
+  expect_error(bayesGARCH(y, Sigma.beta = 1e-320, control = list(l.chain = 3)),
+               "reciprocal is not representable")
+  expect_error(bayesGARCH(y, lambda = 1e-320, control = list(l.chain = 3)),
+               "reciprocal is not representable")
+  expect_error(bayesGARCH(y, Sigma.alpha = diag(1e-320, 2), control = list(l.chain = 3)),
+               "cannot be inverted|not representable")
+})
+
+test_that("covariance symmetry is judged to tolerance, not to the last bit", {
+  ## the two off-diagonal entries are arithmetically equal but not bit-identical
+  S <- matrix(c(1000, 0.1 + 0.2, 0.3, 1000), 2)
+  expect_false(S[1, 2] == S[2, 1])
+  expect_silent(bayesGARCH(y, Sigma.alpha = S, control = list(l.chain = 3, refresh = 0)))
+  ## genuinely asymmetric matrices are still refused
+  expect_error(bayesGARCH(y, Sigma.alpha = matrix(c(1000, 2, 3, 1000), 2),
+                          control = list(l.chain = 3)), "not symmetric")
+})

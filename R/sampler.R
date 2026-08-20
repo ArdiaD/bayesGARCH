@@ -47,8 +47,12 @@
     stop ("'Sigma.alpha' is not of appropriate size")
   if (any(!is.finite(Sigma.alpha)))
     stop ("'Sigma.alpha' must be finite")
-  if (Sigma.alpha[1,2] != Sigma.alpha[2,1])
+  ## symmetry up to rounding: a matrix assembled from two arithmetically equal
+  ## but not bit-identical expressions is symmetric for every practical purpose
+  if (!isTRUE(all.equal(Sigma.alpha[1,2], Sigma.alpha[2,1],
+                        tolerance = sqrt(.Machine$double.eps))))
     stop ("'Sigma.alpha' is not symmetric")
+  Sigma.alpha[1,2] <- Sigma.alpha[2,1] <- 0.5 * (Sigma.alpha[1,2] + Sigma.alpha[2,1])
   if (any(eigen(Sigma.alpha, symmetric = TRUE, only.values = TRUE)$values <= 0))
     stop ("'Sigma.alpha' is not positive definite")
   if (!is.vector(mu.beta) || !is.numeric(mu.beta) || length(mu.beta) != 1)
@@ -59,10 +63,14 @@
     stop ("'Sigma.beta' must be a scalar")
   if (!is.finite(Sigma.beta) || Sigma.beta <= 0)
     stop ("'Sigma.beta' must be a finite positive value")
+  if (!is.finite(1/Sigma.beta))
+    stop ("'Sigma.beta' is too small: its reciprocal is not representable")
   if (!is.vector(lambda) || !is.numeric(lambda) || length(lambda) != 1)
     stop ("'lambda' must be a scalar")
   if (!is.finite(lambda) || lambda <= 0)
     stop ("'lambda' must be a finite positive value")
+  if (!is.finite(1/lambda))
+    stop ("'lambda' is too small: its reciprocal is not representable")
   if (!is.vector(delta) || !is.numeric(delta) || length(delta) != 1)
     stop ("'delta' must be a scalar")
   if (!is.finite(delta))
@@ -74,8 +82,82 @@
   if (!is.null(control$addPriorConditions))
     if (!is.function(control$addPriorConditions))
       stop ("'control$addPriorConditions' must be NULL or a function")
-  
-  fn.bayesGARCH(y, mu.alpha, solve(Sigma.alpha), mu.beta, 1/Sigma.beta, lambda, delta, control)
+
+  ## The sampler is run on data rescaled to unit root mean square. Only alpha0
+  ## carries the scale of y: h is quadratic in y, so under y -> y/s one has
+  ## alpha0 -> alpha0/s^2 while alpha1, beta and nu are unchanged. The Normal
+  ## prior on alpha transforms exactly under that linear map, so the posterior
+  ## explored is the same one, merely expressed in rescaled units, and the
+  ## alpha0 draws are mapped back before being returned.
+  ##
+  ## This matters because the proposals are built from a weighted least squares
+  ## fit whose conditioning depends on the size of y^2 relative to alpha0. On
+  ## badly scaled data the alpha and beta moves were rejected at every sweep;
+  ## nu was then dragged down to delta, the latent variances collapsed, and the
+  ## root solved in fn.nu.full() eventually left its bracket. Dividing a series
+  ## by 100 -- returns in decimals rather than percent -- was enough.
+  ##
+  ## s is a power of two, so the rescaling and its inverse are exact.
+  s <- fn.scale(y)
+  s2 <- s^2
+  if (!is.finite(s2) || s2 <= 0 || !is.finite(s2^2) || s2^2 <= 0)
+    stop ("'y' is on an extreme scale (root mean square ", format(s, digits = 3),
+          "); rescale it before estimation")
+  ## Sigma.alpha is inverted in the ORIGINAL units, where it is well
+  ## conditioned, and the precision is then mapped to the rescaled units by
+  ## solve(D Sigma D) = D^-1 solve(Sigma) D^-1. Inverting the rescaled
+  ## covariance instead would ask solve() to handle a condition number of order
+  ## s^-4, which it rejects as singular for perfectly ordinary priors.
+  iv.alpha <- tryCatch(solve(Sigma.alpha), error = function(e)
+    stop ("'Sigma.alpha' cannot be inverted: ", conditionMessage(e), call. = FALSE))
+  if (any(!is.finite(iv.alpha)))
+    stop ("'Sigma.alpha' is too concentrated: its inverse is not representable")
+
+  if (s != 1) {
+    y <- y/s
+    mu.alpha <- mu.alpha * c(1/s2, 1)
+    iv.alpha <- iv.alpha * outer(c(s2, 1), c(s2, 1))
+    if (any(!is.finite(iv.alpha)) || iv.alpha[1,1] <= 0)
+      stop ("the prior on 'alpha0' is not representable on the scale of 'y' ",
+            "(root mean square ", format(s, digits = 3), "); rescale 'y'")
+    ## starting values and the user's constraint are expressed in the original
+    ## units and are converted on the way in and out
+    if (!is.null(control$start.val)) {
+      sv <- control$start.val
+      if (is.matrix(sv)) { if (ncol(sv) == 4L) sv[,1] <- sv[,1]/s2 }
+      else if (length(sv) == 4L) sv[1] <- sv[1]/s2
+      control$start.val <- sv
+    }
+    if (!is.null(control$addPriorConditions)) {
+      user.apc <- control$addPriorConditions
+      control$addPriorConditions <- function(psi)
+        user.apc(c(psi[1] * s2, psi[2], psi[3], psi[4]))
+    }
+  }
+
+  r <- fn.bayesGARCH(y, mu.alpha, iv.alpha, mu.beta, 1/Sigma.beta, lambda, delta, control)
+
+  if (s != 1)
+    for (i in seq_along(r)) {
+      att <- attributes(r[[i]])
+      m <- r[[i]]
+      m[, "alpha0"] <- m[, "alpha0"] * s2
+      attributes(m) <- att
+      r[[i]] <- m
+    }
+
+  r
+}
+
+## fn.scale
+## the power of two nearest to the root mean square of 'y'. Being a power of two,
+## dividing by it and multiplying back are exact in binary floating point.
+"fn.scale" <- function(y){
+  m <- max(abs(y))
+  if (!is.finite(m) || m <= 0)
+    stop ("'y' is identically zero")
+
+  2^round(log2(m * sqrt(mean((y/m)^2))))
 }
 
 ## fn.checkCount
@@ -85,6 +167,25 @@
     stop ("'", name, "' must be a single finite whole number greater or equal than '", min, "'")
 
   invisible(TRUE)
+}
+
+## fn.evalPriorConditions
+## The user's constraint is called both on the starting values and at every
+## proposed state, and both must agree on what its result means. Checking it
+## only at the start accepted a function returning 1 at proposal time while
+## rejecting it up front, and a function returning NA aborted the chain
+## mid-run with 'missing value where TRUE/FALSE needed'.
+"fn.evalPriorConditions" <- function(f, psi){
+  ok <- tryCatch(f(psi), error = function(e)
+    stop("'control$addPriorConditions' failed at psi = (",
+         paste(format(psi, digits = 6), collapse = ", "), "): ",
+         conditionMessage(e), call. = FALSE))
+  if (length(ok) != 1L || !(is.logical(ok) || is.numeric(ok)) || is.na(ok))
+    stop("'control$addPriorConditions' must return a single non-missing TRUE or ",
+         "FALSE; it returned something else at psi = (",
+         paste(format(psi, digits = 6), collapse = ", "), ")", call. = FALSE)
+
+  as.logical(ok)
 }
 
 ## fn.checkStartVal
@@ -106,10 +207,7 @@
             " must be positive")
     if (psi[4] <= d.nu)
       stop (lab, ": 'nu' must be greater than 'delta' (", format(d.nu), ")")
-    ok <- try(addPriorConditions(psi), silent = TRUE)
-    if (inherits(ok, "try-error"))
-      stop (lab, ": 'control$addPriorConditions' failed when applied to it")
-    if (!isTRUE(ok))
+    if (!addPriorConditions(psi))
       stop (lab, " does not satisfy 'control$addPriorConditions'")
   }
 
@@ -168,7 +266,13 @@
     colnames(con$start.val) <- c("alpha0", "alpha1", "beta", "nu") 
   if (is.null(rownames(con$start.val))) 
     rownames(con$start.val) <- paste(rep("chain", con$n.chain), 1:con$n.chain, sep = "")
-  if (is.null(con$addPriorConditions)) {con$addPriorConditions <- function(psi){TRUE}}
+  ## the default needs no checking; a user-supplied function is wrapped once so
+  ## that every call site validates its result the same way
+  if (is.null(con$addPriorConditions)) con$addPriorConditions <- function(psi) TRUE
+  else {
+    user.apc <- con$addPriorConditions
+    con$addPriorConditions <- function(psi) fn.evalPriorConditions(user.apc, psi)
+  }
   fn.checkStartVal(con$start.val, d.nu, con$addPriorConditions)
   r <- list()
   for (i in 1:con$n.chain) {
@@ -399,8 +503,34 @@
 		
   phi <- 0.5 * sum(log(w) + 1/w) + c.nu
   
+  ## fn.neg.alpha increases in alpha, so the root is bracketed as soon as the
+  ## two endpoints differ in sign. The upper limit was fixed at 500, which the
+  ## root can exceed -- for a sharply concentrated prior on nu, and formerly on
+  ## badly scaled data once the latent variances had collapsed. Widen the
+  ## bracket geometrically rather than failing inside uniroot().
+  f.lo <- fn.neg.alpha(alpha.min, n = n, d = d.nu, phi = phi)
+  f.hi <- fn.neg.alpha(alpha.max, n = n, d = d.nu, phi = phi)
+  k <- 0
+  while (is.finite(f.lo) && is.finite(f.hi) && f.lo * f.hi > 0 && k < 60) {
+    k <- k + 1
+    if (f.hi < 0) {
+      alpha.max <- alpha.max * 4
+      f.hi <- fn.neg.alpha(alpha.max, n = n, d = d.nu, phi = phi)
+    } else {
+      alpha.min <- alpha.min / 4
+      f.lo <- fn.neg.alpha(alpha.min, n = n, d = d.nu, phi = phi)
+    }
+  }
+  if (!is.finite(f.lo) || !is.finite(f.hi) || f.lo * f.hi > 0)
+    stop ("the degrees-of-freedom update cannot bracket its rejection-envelope ",
+          "rate (nu = ", format(nu.old, digits = 6), "). This usually means the ",
+          "chain has drifted to a degenerate state; try rescaling 'y' or a less ",
+          "diffuse prior on 'nu'", call. = FALSE)
+
   optim.alpha <- uniroot(fn.neg.alpha,
                          interval = c(alpha.min, alpha.max),
+                         f.lower = f.lo,
+                         f.upper = f.hi,
                          tol = .Machine$double.eps,
                          maxiter = 1000,
                          n = n,

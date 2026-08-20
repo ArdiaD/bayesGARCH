@@ -13,6 +13,46 @@ Changes in Version 2.2.0
     Runs WITHOUT 'addPriorConditions' target the same posterior as before and
     need not be revisited; see the note on numerical changes below for why
     they are nonetheless no longer reproduced bit for bit from a given seed.
+  o BUG FIX, AFFECTS RESULTS: the series is now rescaled internally to unit
+    root mean square and the draws are mapped back, so that results no longer
+    depend on the units of 'y'. The proposals are built from a weighted least
+    squares fit whose conditioning depends on the size of y^2 relative to
+    alpha0, and whose starting value for alpha0 was a fixed 0.01. On a series
+    whose scale was far from unity every alpha and beta move was rejected: the
+    move rates were exactly zero, nu was then dragged down to delta, the latent
+    variances collapsed, and the root solved in the nu update eventually left
+    its bracket and aborted the run. Dividing a series by 100 -- log-returns in
+    decimals rather than in percent -- was enough to trigger it. Only alpha0
+    carries the scale, and the Normal prior on alpha transforms exactly under
+    the map, so the posterior explored is unchanged; the factor is a power of
+    two, which makes the rescaling and its inverse exact. Note that the prior
+    is stated in the units of 'y': rescaling 'y' without rescaling
+    'Sigma.alpha' changes the posterior, as it should.
+  o BUG FIX: the rejection-envelope rate of the nu update was solved on the
+    fixed interval [1e-5, 500]. The root can lie above 500, for a sharply
+    concentrated prior on nu such as lambda = 500 with delta = 500. The bracket
+    is now widened geometrically until the endpoints differ in sign, and a
+    failure to bracket is reported with a message naming the state instead of
+    surfacing as 'f() values at end points not of opposite sign'.
+  o BUG FIX: 'control$addPriorConditions' is now validated identically wherever
+    it is called. The starting values were checked with isTRUE() while proposed
+    states were tested directly, so a function returning a truthy number such
+    as 1 was refused up front although the sampler would have accepted it, and
+    a function returning NA only at some proposed states aborted the chain
+    mid-run with 'missing value where TRUE/FALSE needed'. Both now give one
+    message naming the offending parameter vector.
+  o Prior variances too concentrated to invert are refused with a clear
+    message: 'Sigma.beta' and 'lambda' whose reciprocals overflow, and a
+    'Sigma.alpha' that cannot be inverted. 'Sigma.alpha' is inverted in the
+    units of 'y', where it is well conditioned, and the precision is then
+    mapped to the rescaled units.
+  o The symmetry of 'Sigma.alpha' is judged to tolerance rather than by exact
+    floating-point equality, so a matrix whose off-diagonal entries are
+    arithmetically equal but not bit-identical is accepted; it is symmetrised
+    before use. Genuinely asymmetric matrices are still refused.
+  o A series on a scale that cannot be represented after squaring is refused
+    with a clear message rather than failing inside a Cholesky factorisation or
+    returning a chain that never moves.
   o BUG FIX, AFFECTS RESULTS: starting values are now required to lie in the
     support of the posterior, and are rejected with an error naming the row and
     the failed condition otherwise. Every Metropolis-Hastings step only accepts

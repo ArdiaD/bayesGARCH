@@ -59,13 +59,80 @@ test_that("every returned draw satisfies the requested constraint", {
   }
 })
 
-test_that("a constraint no value of nu can satisfy does not spin the nu step", {
-  ## alpha1 + beta < 1 does not involve nu. Up to 2.2.0 the constraint was tested
-  ## inside the accept-reject loop, so an inadmissible state burned all 50000
-  ## proposals per iteration. Starting admissibly, the run must stay quick.
-  set.seed(1)
-  el <- system.time(bayesGARCH(y, control = list(l.chain = 25, refresh = 0,
-                                                 start.val = c(0.02, 0.10, 0.80, 6),
-                                                 addPriorConditions = csc)))[["elapsed"]]
-  expect_lt(el, 5)
+test_that("a constraint no value of nu can satisfy does not exhaust the proposal loop", {
+  ## alpha1 + beta < 1 does not involve nu, so no proposal can satisfy it from an
+  ## inadmissible state. The constraint was once tested inside the accept-reject
+  ## loop, which then ran all 50000 proposals. The draw is now taken from the full
+  ## conditional first and the indicator applied once, so the constrained call
+  ## consumes exactly the same random numbers as the unconstrained one. Comparing
+  ## the state of the generator afterwards tests that deterministically, rather
+  ## than by wall-clock time, which is unreliable on a loaded machine.
+  fn.nu.full <- bayesGARCH:::fn.nu.full
+  n <- 250
+  a <- list(y[1:n], c(0.01, 0.6), 0.7, 5, rep(1, n), c(0, 0),
+            solve(1000 * diag(1, 2)), 0, 1/1000, 0.01, 2)
+
+  set.seed(11); v1 <- do.call(fn.nu.full, c(a, list(function(psi) TRUE)))
+  r1 <- runif(1)
+  set.seed(11); v2 <- do.call(fn.nu.full, c(a, list(csc)))
+  r2 <- runif(1)
+
+  expect_identical(r1, r2)          # same number of variates drawn
+  expect_identical(v2, 5)           # the inadmissible draw is rejected
+  expect_false(identical(v1, v2))   # the unconstrained call keeps it
+})
+
+test_that("the sampler is equivariant to a power-of-two rescaling of y", {
+  ## y is rescaled internally to unit root mean square, exactly so for a
+  ## power-of-two factor. Under y -> y*s only alpha0 carries the scale, so with
+  ## the prior on alpha0, the starting value and the constraint all expressed in
+  ## the new units, the two runs must agree draw for draw.
+  ##
+  ## The prior has to be transformed as well: it is stated in absolute units, so
+  ## holding it fixed while rescaling y genuinely changes the posterior rather
+  ## than revealing an asymmetry in the sampler.
+  y1 <- dem2gbp[1:400]
+  s  <- 1024
+  d  <- c(s^2, 1)
+  set.seed(21)
+  A <- as.matrix(bayesGARCH(y1, control = list(l.chain = 40, refresh = 0,
+                                               start.val = c(0.05, 0.1, 0.7, 10)))[[1]])
+  set.seed(21)
+  B <- as.matrix(bayesGARCH(y1 * s,
+                            mu.alpha    = c(0, 0) * d,
+                            Sigma.alpha = 1000 * diag(1, 2) * outer(d, d),
+                            control = list(l.chain = 40, refresh = 0,
+                                           start.val = c(0.05 * s^2, 0.1, 0.7, 10)))[[1]])
+  expect_identical(A[, "alpha1"], B[, "alpha1"])
+  expect_identical(A[, "beta"],   B[, "beta"])
+  expect_identical(A[, "nu"],     B[, "nu"])
+  expect_identical(A[, "alpha0"] * s^2, B[, "alpha0"])
+})
+
+test_that("badly scaled data no longer stalls or crashes", {
+  ## dem2gbp is quoted in percent; a user supplying decimal log-returns passes
+  ## y/100. That used to reject every alpha and beta move -- move rates of
+  ## exactly zero -- and then abort in the nu update once nu had been dragged to
+  ## delta and the latent variances had collapsed.
+  for (s in c(1, 1e-2, 1e-6)) {
+    set.seed(5)
+    M <- bayesGARCH(y * s, control = list(l.chain = 60, refresh = 0))
+    mr <- attr(M[[1]], "move.rates")
+    expect_gt(mr[["alpha0"]], 0)
+    expect_gt(mr[["alpha1"]], 0)
+    expect_gt(mr[["beta"]],   0)
+    expect_true(all(is.finite(as.matrix(M[[1]]))))
+  }
+  ## a scale that cannot be represented is refused with a clear message
+  expect_error(bayesGARCH(y * 1e-200, control = list(l.chain = 3)), "extreme scale")
+  expect_error(bayesGARCH(y * 1e155,  control = list(l.chain = 3)), "extreme scale")
+})
+
+test_that("the nu root bracket widens instead of failing", {
+  ## a sharply concentrated prior on nu pushes the rejection-envelope rate above
+  ## the former fixed upper limit of 500
+  expect_silent(bayesGARCH(y[1:150], lambda = 500, delta = 500,
+                           control = list(l.chain = 3, refresh = 0)))
+  expect_silent(bayesGARCH(y[1:150], lambda = 5000, delta = 500,
+                           control = list(l.chain = 3, refresh = 0)))
 })
