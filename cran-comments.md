@@ -86,13 +86,15 @@ Nothing downstream is affected.
 ## Test environments
 
 * win-builder, R-release, R 4.6.1, x86_64-w64-mingw32, gcc 14.3.0 --
-  **Status: OK** (no errors, warnings or notes; PDF manual OK)
-* win-builder, R-devel -- submitted
+  **Status: OK** (no errors, warnings or notes; PDF and HTML manual OK)
+* win-builder, R-devel, R-devel r90424 (2026-08-17), x86_64-w64-mingw32,
+  gcc 14.3.0 -- **Status: OK** (no errors, warnings or notes; PDF and HTML
+  manual OK)
 * local: macOS 26.6.1, aarch64-apple-darwin20, R 4.5.2, Apple clang 21.0.0
 
 ## R CMD check results
 
-No ERRORs, WARNINGs or NOTEs on win-builder.
+No ERRORs, WARNINGs or NOTEs on win-builder, under either R-release or R-devel.
 
 The local run reports one WARNING, which does not come from this package's
 sources and does not reproduce elsewhere:
@@ -109,7 +111,8 @@ It is emitted while compiling `#include <R_ext/Rdynload.h>`: R's own
 "-Wfixed-enum-extension"`, and the Apple clang 21 shipped with the current macOS
 command line tools does not know that warning group. Both package source files
 compile with no warnings of their own under `-Wall`, and win-builder reports
-`checking whether package 'bayesGARCH' can be installed ... OK`.
+`checking whether package 'bayesGARCH' can be installed ... OK` under both
+R-release and R-devel.
 
 `checking CRAN incoming feasibility` is OK.
 
