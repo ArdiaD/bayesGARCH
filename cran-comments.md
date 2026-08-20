@@ -77,11 +77,24 @@ are checked in the test suite: the Normal special case reproduces the published
 against an independent random-walk Metropolis implementation sharing no code
 with the package.
 
-There is one reverse dependency, `miscFuncs`, which suggests `bayesGARCH`. Its
-`fcastGARCH()` consumes an MCMC chain matrix from `bayesGARCH()`. I checked it
-against this version: the returned object, its `chain1` element, and the column
-layout are unchanged, and `fcastGARCH()` produces finite forecasts as before.
-Nothing downstream is affected.
+There is one reverse dependency, `miscFuncs` 1.5-10, which suggests
+`bayesGARCH`. I checked it two ways.
+
+`R CMD check` on `miscFuncs` against bayesGARCH 2.1.10 and against this version,
+in separate library trees, gives `Status: OK` both times, with check logs that
+are identical once paths and timings are normalised. That result is weak
+evidence on its own, and I would rather say so than lean on it: `miscFuncs`
+never loads `bayesGARCH` -- there is no `library()`, `require()` or `::`
+reference to it anywhere in the package -- so its checks do not exercise this
+one.
+
+The dependency is instead one of data format: `fcastGARCH(y, parmat, l)` is
+documented to take a chain matrix such as `out$chain1` from `bayesGARCH()`. I
+therefore also ran it directly under both versions. The returned object is a
+`mcmc.list` with elements `chain1`, `chain2`, each an `mcmc` matrix with columns
+`alpha0`, `alpha1`, `beta`, `nu`, identically under 2.1.10 and 2.2.0, and
+`fcastGARCH()` followed by `lr2fact()` produces finite forecasts with positive
+conditional variances in both cases. Nothing downstream is affected.
 
 ## Test environments
 
