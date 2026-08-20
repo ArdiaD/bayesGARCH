@@ -88,7 +88,6 @@ Nothing downstream is affected.
 * win-builder, R-release, R 4.6.1, x86_64-w64-mingw32, gcc 14.3.0 --
   **Status: OK** (no errors, warnings or notes; PDF manual OK)
 * win-builder, R-devel -- submitted
-* macOS builder (mac.r-project.org), macOS arm64 -- submitted
 * local: macOS 26.6.1, aarch64-apple-darwin20, R 4.5.2, Apple clang 21.0.0
 
 ## R CMD check results
